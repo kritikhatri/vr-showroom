@@ -137,7 +137,7 @@ public class CategorySelectionPanel : MonoBehaviour
         UpdateButtonHighlights();
 
         // Notify the product catalogue to filter by this category
-        // ProductCatalogue.Instance will be implemented in Commit 09
+        // ProductCatalogue applies this selection to the registered product cards.
         if (ProductCatalogue.Instance != null)
             ProductCatalogue.Instance.FilterByCategory(category);
     }
