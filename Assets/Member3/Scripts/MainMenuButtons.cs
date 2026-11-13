@@ -132,6 +132,13 @@ public class MainMenuButtons : MonoBehaviour
     {
         Debug.Log("MainMenuButtons: Opening Product Catalogue...");
 
+        // Use the shared navigation flow when it is present in the scene.
+        if (ProductCatalogueNavigation.Instance != null)
+        {
+            ProductCatalogueNavigation.Instance.ShowCategories();
+            return;
+        }
+
         // If we have a panel reference, show it and hide main menu
         if (productCataloguePanel != null)
         {
