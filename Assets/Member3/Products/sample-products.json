@@ -1,0 +1,110 @@
+{
+  "catalogueName": "Virtual Garment Showroom Sample Catalogue",
+  "industry": "Garments",
+  "products": [
+    {
+      "id": "SH-001",
+      "name": "Classic Cotton Crew Neck T-Shirt",
+      "category": "Shirts",
+      "description": "A breathable everyday crew neck shirt made from soft cotton jersey.",
+      "specifications": {
+        "material": "100% cotton",
+        "fit": "Regular",
+        "availableSizes": "S, M, L, XL",
+        "care": "Machine wash cold"
+      },
+      "image": ""
+    },
+    {
+      "id": "SH-002",
+      "name": "Oxford Button-Down Shirt",
+      "category": "Shirts",
+      "description": "A durable woven shirt with a button-down collar for work or casual wear.",
+      "specifications": {
+        "material": "Cotton Oxford cloth",
+        "fit": "Regular",
+        "availableSizes": "S, M, L, XL",
+        "care": "Machine wash cold; iron warm"
+      },
+      "image": ""
+    },
+    {
+      "id": "JK-001",
+      "name": "Lightweight Utility Jacket",
+      "category": "Jackets",
+      "description": "A lightweight outer layer with practical front pockets and a zip closure.",
+      "specifications": {
+        "material": "Cotton-polyester twill",
+        "fit": "Relaxed",
+        "availableSizes": "S, M, L, XL",
+        "care": "Machine wash cold"
+      },
+      "image": ""
+    },
+    {
+      "id": "JK-002",
+      "name": "Quilted Insulated Jacket",
+      "category": "Jackets",
+      "description": "A quilted jacket designed to provide a warm, comfortable layer in cool weather.",
+      "specifications": {
+        "material": "Recycled polyester shell; polyester fill",
+        "fit": "Regular",
+        "availableSizes": "S, M, L, XL",
+        "care": "Gentle machine wash"
+      },
+      "image": ""
+    },
+    {
+      "id": "TR-001",
+      "name": "Straight-Leg Work Trousers",
+      "category": "Trousers",
+      "description": "Hard-wearing work trousers with a straight-leg cut and reinforced seams.",
+      "specifications": {
+        "material": "Cotton-polyester canvas",
+        "fit": "Straight leg",
+        "availableSizes": "28, 30, 32, 34, 36",
+        "care": "Machine wash warm"
+      },
+      "image": ""
+    },
+    {
+      "id": "TR-002",
+      "name": "Stretch Chino Trousers",
+      "category": "Trousers",
+      "description": "Versatile chinos made with a small amount of stretch for ease of movement.",
+      "specifications": {
+        "material": "Cotton with elastane",
+        "fit": "Slim straight",
+        "availableSizes": "28, 30, 32, 34, 36",
+        "care": "Machine wash cold"
+      },
+      "image": ""
+    },
+    {
+      "id": "DR-001",
+      "name": "Everyday A-Line Dress",
+      "category": "Dresses",
+      "description": "A comfortable knee-length A-line dress with short sleeves and a simple finish.",
+      "specifications": {
+        "material": "Cotton poplin",
+        "fit": "A-line",
+        "availableSizes": "XS, S, M, L, XL",
+        "care": "Machine wash cold; iron warm"
+      },
+      "image": ""
+    },
+    {
+      "id": "DR-002",
+      "name": "Formal Woven Midi Dress",
+      "category": "Dresses",
+      "description": "A woven midi dress with a clean silhouette suited to formal occasions.",
+      "specifications": {
+        "material": "Polyester-viscose blend",
+        "fit": "Regular",
+        "availableSizes": "XS, S, M, L, XL",
+        "care": "Gentle machine wash"
+      },
+      "image": ""
+    }
+  ]
+}
