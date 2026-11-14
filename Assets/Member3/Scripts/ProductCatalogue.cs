@@ -58,7 +58,7 @@ public class ProductCatalogue : MonoBehaviour
 
     private void OnEnable()
     {
-        ProductCard.OnProductCardSelected += ShowProductInformation;
+        ProductCard.OnProductCardSelected += HandleProductCardSelected;
         ProductInteractor.OnProductSelected += ShowWorldProductInformation;
         if (searchInput != null)
             searchInput.onValueChanged.AddListener(SearchByName);
@@ -68,7 +68,7 @@ public class ProductCatalogue : MonoBehaviour
 
     private void OnDisable()
     {
-        ProductCard.OnProductCardSelected -= ShowProductInformation;
+        ProductCard.OnProductCardSelected -= HandleProductCardSelected;
         ProductInteractor.OnProductSelected -= ShowWorldProductInformation;
         if (searchInput != null)
             searchInput.onValueChanged.RemoveListener(SearchByName);
@@ -229,6 +229,20 @@ public class ProductCatalogue : MonoBehaviour
         }
 
         Debug.Log($"ProductCatalogue: Loaded {productsById.Count} product record(s).", this);
+    }
+
+    private void HandleProductCardSelected(ProductCard selectedCard)
+    {
+        if (selectedCard == null)
+            return;
+
+        foreach (ProductCard card in productCards)
+        {
+            if (card != null)
+                card.SetSelected(card == selectedCard);
+        }
+
+        ShowProductInformation(selectedCard.ProductId);
     }
 
     private void ShowProductInformation(string productId)

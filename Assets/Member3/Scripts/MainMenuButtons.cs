@@ -181,16 +181,23 @@ public class MainMenuButtons : MonoBehaviour
         Image img = button.GetComponent<Image>();
         if (img != null)
         {
-            // Multiply colour by 1.2 to brighten it slightly
-            Color hoverColor = img.color * 1.2f;
-            hoverColor.a = 1f;           // keep fully opaque
-            img.color = hoverColor;
+            Color baseColor = GetButtonBaseColor(button);
+            img.color = Color.Lerp(baseColor, Color.white, 0.2f);
         }
     }
 
     /// <summary>Restores the button colour when mouse leaves.</summary>
     public void OnButtonHoverExit(Button button)
     {
-        SetupButtonColours();            // just reapply original colours
+        if (button == null) return;
+        SetButtonColor(button, GetButtonBaseColor(button));
+    }
+
+    private Color GetButtonBaseColor(Button button)
+    {
+        if (button == enterShowroomButton) return enterButtonColor;
+        if (button == exploreProductsButton) return exploreButtonColor;
+        if (button == exitButton) return exitButtonColor;
+        return Color.white;
     }
 }

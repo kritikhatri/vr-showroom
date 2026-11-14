@@ -33,5 +33,6 @@ ProductCard (RectTransform, CanvasRenderer, Image, Button, ProductCard.cs)
 
 ## Integration
 - Script: `ProductCard.cs`
-- Emits event: `ProductCard.OnProductCardSelected` with the selected item's `productId`.
-- Seamlessly connects to catalogue grid generators and product detail panels.
+- Emits `ProductCard.OnProductCardSelected` with the selected `ProductCard`; the catalogue uses its ID to load the matching product record.
+- The selected card remains highlighted after the pointer leaves, and selecting a different card moves the highlight.
+- Missing thumbnail sprites hide the image component so a reused card cannot display a stale image.
