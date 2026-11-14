@@ -58,22 +58,50 @@ public class ProductInformationPanel : MonoBehaviour
             return;
         }
 
+        string[] specificationLines = product.GetSpecificationLines();
+        SetProductContent(product.Name, product.Category, product.Id, product.Description,
+            string.Join("\n", specificationLines), image);
+    }
+
+    /// <summary>Displays a scene product selected through Member 2's world interaction.</summary>
+    public void DisplayProduct(global::Product product)
+    {
+        if (product == null)
+        {
+            ClearProduct();
+            return;
+        }
+
+        string specifications = product.specifications ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(product.price))
+        {
+            string priceLine = "Price: " + product.price.Trim();
+            specifications = string.IsNullOrWhiteSpace(specifications)
+                ? priceLine
+                : priceLine + "\n" + specifications;
+        }
+
+        SetProductContent(product.productName, product.category, string.Empty,
+            product.description, specifications, null);
+    }
+
+    private void SetProductContent(string productName, string category, string productId,
+        string description, string specifications, Sprite image)
+    {
         hasProduct = true;
 
         if (productNameText != null)
-            productNameText.text = string.IsNullOrWhiteSpace(product.Name) ? "Untitled product" : product.Name;
+            productNameText.text = string.IsNullOrWhiteSpace(productName) ? "Untitled product" : productName;
         if (categoryText != null)
-            categoryText.text = "Category: " + (string.IsNullOrWhiteSpace(product.Category) ? "—" : product.Category);
+            categoryText.text = "Category: " + (string.IsNullOrWhiteSpace(category) ? "—" : category);
         if (productIdText != null)
-            productIdText.text = "Product ID: " + (string.IsNullOrWhiteSpace(product.Id) ? "—" : product.Id);
+            productIdText.text = "Product ID: " + (string.IsNullOrWhiteSpace(productId) ? "—" : productId);
         if (descriptionText != null)
-            descriptionText.text = string.IsNullOrWhiteSpace(product.Description) ? "No description available." : product.Description;
-
-        string[] specificationLines = product.GetSpecificationLines();
+            descriptionText.text = string.IsNullOrWhiteSpace(description) ? "No description available." : description;
         if (specificationsText != null)
-            specificationsText.text = specificationLines.Length == 0
+            specificationsText.text = string.IsNullOrWhiteSpace(specifications)
                 ? "No specifications available."
-                : string.Join("\n", specificationLines);
+                : specifications;
 
         if (productImage != null)
         {
