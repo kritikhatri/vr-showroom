@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Product catalogue and information panel layout reference</title>
+  <desc id="desc">Conceptual garment catalogue with category filters, search, product cards, and a selected product information panel.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b1120"/><stop offset="1" stop-color="#111a2d"/></linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1b2d49"/><stop offset="1" stop-color="#112035"/></linearGradient>
+    <linearGradient id="fabric1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b6d1c9"/><stop offset="1" stop-color="#799e96"/></linearGradient>
+    <linearGradient id="fabric2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d6ad78"/><stop offset="1" stop-color="#9e7652"/></linearGradient>
+    <linearGradient id="fabric3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#879cc5"/><stop offset="1" stop-color="#52698e"/></linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1440" height="88" fill="#080d18"/>
+  <path d="M0 88h1440" stroke="#26354c"/>
+  <g font-family="Arial, sans-serif">
+    <text x="64" y="54" fill="#f4f7ff" font-size="24" font-weight="700">THREADHAVEN</text>
+    <text x="1376" y="53" fill="#7e91ad" font-size="15" text-anchor="end">VIRTUAL GARMENT SHOWROOM</text>
+    <text x="64" y="146" fill="#f5f7fc" font-size="34" font-weight="700">Explore the collection</text>
+    <text x="64" y="180" fill="#9caec7" font-size="17">Choose a category or search by product name.</text>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">
+    <rect x="64" y="209" width="86" height="42" rx="21" fill="#236fe0"/><text x="107" y="236" fill="#fff">ALL</text>
+    <rect x="160" y="209" width="118" height="42" rx="21" fill="#1d2a40" stroke="#3b4c66"/><text x="219" y="236" fill="#ccd8e9">SHIRTS</text>
+    <rect x="288" y="209" width="128" height="42" rx="21" fill="#1d2a40" stroke="#3b4c66"/><text x="352" y="236" fill="#ccd8e9">JACKETS</text>
+    <rect x="426" y="209" width="146" height="42" rx="21" fill="#1d2a40" stroke="#3b4c66"/><text x="499" y="236" fill="#ccd8e9">TROUSERS</text>
+    <rect x="582" y="209" width="126" height="42" rx="21" fill="#1d2a40" stroke="#3b4c66"/><text x="645" y="236" fill="#ccd8e9">DRESSES</text>
+  </g>
+  <rect x="64" y="273" width="814" height="52" rx="10" fill="#131f32" stroke="#33435a"/>
+  <circle cx="91" cy="298" r="8" fill="none" stroke="#7f94b1" stroke-width="2"/><path d="m97 304 7 7" stroke="#7f94b1" stroke-width="2"/>
+  <text x="119" y="304" fill="#8293ac" font-family="Arial, sans-serif" font-size="16">Search products by name</text>
+  <text x="878" y="357" fill="#8193ad" font-family="Arial, sans-serif" font-size="14" text-anchor="end">8 products</text>
+  <g>
+    <rect x="64" y="376" width="250" height="368" rx="14" fill="#151f30" stroke="#3a4d69" stroke-width="2"/>
+    <rect x="80" y="392" width="218" height="191" rx="10" fill="url(#fabric1)"/>
+    <path d="M138 442 161 418h56l24 24 25 15-20 34-15-9v76h-78v-76l-15 9-20-34z" fill="#e6efe9" stroke="#6f8e87" stroke-width="3"/>
+    <path d="M178 419 189 437 200 419M189 437v87" fill="none" stroke="#93aaa2" stroke-width="3"/>
+    <rect x="96" y="598" width="72" height="24" rx="12" fill="#203956"/><text x="132" y="615" fill="#a9d3ff" font-family="Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">SHIRTS</text>
+    <text x="96" y="651" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Classic Cotton Crew</text>
+    <text x="96" y="675" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Neck T-Shirt</text>
+    <text x="96" y="714" fill="#8497b1" font-family="Arial, sans-serif" font-size="14">ID: SH-001</text>
+  </g>
+  <g>
+    <rect x="332" y="376" width="250" height="368" rx="14" fill="#151f30" stroke="#26364d"/>
+    <rect x="348" y="392" width="218" height="191" rx="10" fill="url(#fabric2)"/>
+    <path d="M408 433 431 417h52l25 20 22 18-23 33-14-9v80h-78v-80l-14 9-23-33z" fill="#dfbf97" stroke="#9b7958" stroke-width="3"/>
+    <path d="m431 417 26 17 26-17M457 434v125M441 479h9M464 479h9" fill="none" stroke="#9b7958" stroke-width="3"/>
+    <rect x="364" y="598" width="72" height="24" rx="12" fill="#203956"/><text x="400" y="615" fill="#a9d3ff" font-family="Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">SHIRTS</text>
+    <text x="364" y="651" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Oxford Button-Down</text>
+    <text x="364" y="675" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Shirt</text>
+    <text x="364" y="714" fill="#8497b1" font-family="Arial, sans-serif" font-size="14">ID: SH-002</text>
+  </g>
+  <g>
+    <rect x="600" y="376" width="250" height="368" rx="14" fill="#151f30" stroke="#26364d"/>
+    <rect x="616" y="392" width="218" height="191" rx="10" fill="url(#fabric3)"/>
+    <path d="M677 433 700 417h52l26 20 22 19-23 32-14-9v80h-78v-80l-15 9-22-32z" fill="#859ac2" stroke="#506485" stroke-width="3"/>
+    <path d="m700 417 26 17 26-17M726 434v125M711 472l-7 32M741 472l7 32" fill="none" stroke="#506485" stroke-width="3"/>
+    <rect x="632" y="598" width="78" height="24" rx="12" fill="#203956"/><text x="671" y="615" fill="#a9d3ff" font-family="Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">JACKETS</text>
+    <text x="632" y="651" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Lightweight Utility</text>
+    <text x="632" y="675" fill="#f0f4fb" font-family="Arial, sans-serif" font-size="17" font-weight="700">Jacket</text>
+    <text x="632" y="714" fill="#8497b1" font-family="Arial, sans-serif" font-size="14">ID: JK-001</text>
+  </g>
+  <g>
+    <rect x="910" y="209" width="466" height="535" rx="16" fill="url(#hero)" stroke="#354b68"/>
+    <text x="944" y="255" fill="#70afff" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2">PRODUCT DETAILS</text>
+    <text x="944" y="302" fill="#f5f7fc" font-family="Arial, sans-serif" font-size="26" font-weight="700">Classic Cotton Crew</text>
+    <text x="944" y="335" fill="#f5f7fc" font-family="Arial, sans-serif" font-size="26" font-weight="700">Neck T-Shirt</text>
+    <text x="944" y="370" fill="#a4bbd8" font-family="Arial, sans-serif" font-size="15">Category: Shirts</text>
+    <text x="944" y="395" fill="#a4bbd8" font-family="Arial, sans-serif" font-size="15">Product ID: SH-001</text>
+    <rect x="944" y="421" width="398" height="1" fill="#405774"/>
+    <text x="944" y="458" fill="#e8eff9" font-family="Arial, sans-serif" font-size="16" font-weight="700">Description</text>
+    <text x="944" y="489" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">A breathable everyday crew neck shirt made</text>
+    <text x="944" y="513" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">from soft cotton jersey.</text>
+    <text x="944" y="561" fill="#e8eff9" font-family="Arial, sans-serif" font-size="16" font-weight="700">Specifications</text>
+    <text x="944" y="594" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">Material: 100% cotton</text>
+    <text x="944" y="621" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">Fit: Regular</text>
+    <text x="944" y="648" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">Available sizes: S, M, L, XL</text>
+    <text x="944" y="675" fill="#b8c6d9" font-family="Arial, sans-serif" font-size="15">Care: Machine wash cold</text>
+    <rect x="944" y="700" width="116" height="30" rx="15" fill="#183d66"/><text x="1002" y="720" fill="#c5e1ff" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">BACK</text>
+    <rect x="1070" y="700" width="116" height="30" rx="15" fill="#183d66"/><text x="1128" y="720" fill="#c5e1ff" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">HOME</text>
+    <rect x="1196" y="700" width="116" height="30" rx="15" fill="#402632"/><text x="1254" y="720" fill="#ffc5d1" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">CLOSE</text>
+  </g>
+  <text x="64" y="840" fill="#7b8da8" font-family="Arial, sans-serif" font-size="14">LAYOUT REFERENCE · NOT A RUNTIME SCREENSHOT</text>
+</svg>
