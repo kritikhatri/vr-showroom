@@ -6,47 +6,43 @@ using System;
 
 /// <summary>
 /// ProductCard.cs
-/// Reusable UI component representing a single product item card in the showroom catalog.
-/// Displays the product thumbnail, item title, category badge, and handles selection clicks.
-/// Attach this script to the ProductCard prefab root GameObject.
+/// Reusable UI component for a single product card in the catalogue grid.
+/// Displays thumbnail, product name, and category badge.
+/// Fires OnProductCardSelected(ProductCard) when clicked so ProductCatalogue
+/// can deselect other cards and open the information panel.
 /// </summary>
 public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     // ─────────────────────────────────────────────────────────────────────────
-    // INSPECTOR REFERENCES
+    // INSPECTOR FIELDS
     // ─────────────────────────────────────────────────────────────────────────
 
     [Header("--- UI Elements ---")]
-    [Tooltip("Image component displaying the product thumbnail")]
-    [SerializeField] private Image productImage;
-
-    [Tooltip("Text component displaying the product title/name")]
+    [SerializeField] private Image    productImage;
     [SerializeField] private TMP_Text productNameText;
-
-    [Tooltip("Text component displaying category or brief specification badge")]
     [SerializeField] private TMP_Text categoryBadgeText;
-
-    [Tooltip("Text component displaying product price or SKU")]
     [SerializeField] private TMP_Text priceOrSkuText;
+    [SerializeField] private Button   cardButton;
 
-    [Tooltip("Main clickable button representing the card")]
-    [SerializeField] private Button cardButton;
-
-    [Header("--- Visual Styling & Feedback ---")]
-    [Tooltip("Card background frame or container image")]
+    [Header("--- Visual Styling ---")]
     [SerializeField] private Image cardBackground;
+    [SerializeField] private Color defaultCardColor  = new Color(0.12f, 0.14f, 0.22f, 0.95f);
+    [SerializeField] private Color hoverCardColor    = new Color(0.18f, 0.22f, 0.35f, 1f);
+    [SerializeField] private Color selectedCardColor = new Color(0.15f, 0.45f, 0.85f, 1f);
 
-    [SerializeField] private Color defaultCardColor = new Color(0.12f, 0.14f, 0.22f, 0.95f);
-    [SerializeField] private Color hoverCardColor   = new Color(0.18f, 0.22f, 0.35f, 1f);
-    [SerializeField] private Color selectedCardColor= new Color(0.15f, 0.45f, 0.85f, 1f);
-
-    [Header("--- Product Data Binding ---")]
+    [Header("--- Product Data ---")]
     [SerializeField] private string productId;
     [SerializeField] private string productName;
     [SerializeField] private string productCategory;
-    private bool isSelected;
 
-    // Action/callback triggered when this card is clicked
+    // ─────────────────────────────────────────────────────────────────────────
+    // EVENT  — passes the entire card so ProductCatalogue can compare references
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fired when a card is clicked.
+    /// ProductCatalogue.HandleProductCardSelected subscribes to this.
+    /// </summary>
     public static event Action<ProductCard> OnProductCardSelected;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -56,9 +52,7 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void Awake()
     {
         if (cardButton != null)
-        {
             cardButton.onClick.AddListener(HandleCardClick);
-        }
 
         ResetVisualState();
     }
@@ -66,96 +60,72 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void OnDestroy()
     {
         if (cardButton != null)
-        {
             cardButton.onClick.RemoveListener(HandleCardClick);
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // PUBLIC SETUP METHODS
+    // PUBLIC SETUP
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Configures the card with dynamic product information.
-    /// </summary>
-    public void SetupCard(string id, string name, string category, Sprite imageSprite, string priceOrTag = "")
+    /// <summary>Populates the card with product data at runtime.</summary>
+    public void SetupCard(string id, string name, string category,
+                          Sprite imageSprite, string priceOrTag = "")
     {
         productId       = id;
         productName     = name;
         productCategory = category;
-        isSelected      = false;
 
-        if (productNameText != null)
-            productNameText.text = string.IsNullOrWhiteSpace(name) ? "Untitled product" : name;
+        if (productNameText     != null) productNameText.text     = name;
+        if (categoryBadgeText   != null) categoryBadgeText.text   = category.ToUpper();
+        if (priceOrSkuText      != null)
+            priceOrSkuText.text = string.IsNullOrEmpty(priceOrTag) ? $"ID: {id}" : priceOrTag;
 
-        if (categoryBadgeText != null)
-            categoryBadgeText.text = string.IsNullOrWhiteSpace(category) ? "UNCATEGORIZED" : category.ToUpperInvariant();
-
-        if (productImage != null)
+        if (productImage != null && imageSprite != null)
         {
-            productImage.sprite = imageSprite;
-            productImage.enabled = imageSprite != null;
-            productImage.preserveAspect = true;
-        }
-
-        if (priceOrSkuText != null)
-        {
-            priceOrSkuText.text = string.IsNullOrWhiteSpace(priceOrTag)
-                ? $"ID: {(string.IsNullOrWhiteSpace(id) ? "—" : id)}"
-                : priceOrTag;
+            productImage.sprite          = imageSprite;
+            productImage.preserveAspect  = true;
         }
 
         ResetVisualState();
     }
 
-    /// <summary>
-    /// Highlights or unhighlights the card when selected in the catalogue.
-    /// </summary>
+    /// <summary>Highlights or un-highlights the card border.</summary>
     public void SetSelected(bool isSelected)
     {
-        this.isSelected = isSelected;
         if (cardBackground != null)
-        {
-            cardBackground.color = this.isSelected ? selectedCardColor : defaultCardColor;
-        }
+            cardBackground.color = isSelected ? selectedCardColor : defaultCardColor;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // EVENT & INTERACTION HANDLERS
+    // INTERACTION
     // ─────────────────────────────────────────────────────────────────────────
 
     private void HandleCardClick()
     {
-        Debug.Log($"ProductCard: Selected item [{productId}] - {productName}");
+        Debug.Log($"ProductCard: clicked [{productId}] {productName}");
         SetSelected(true);
-        OnProductCardSelected?.Invoke(this);
+        OnProductCardSelected?.Invoke(this);   // pass the whole card — ProductCatalogue uses ProductId
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (cardBackground != null)
-        {
             cardBackground.color = hoverCardColor;
-        }
     }
 
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        ResetVisualState();
-    }
+    public void OnPointerExit(PointerEventData eventData) => ResetVisualState();
 
     private void ResetVisualState()
     {
         if (cardBackground != null)
-        {
-            cardBackground.color = isSelected ? selectedCardColor : defaultCardColor;
-        }
+            cardBackground.color = defaultCardColor;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // GETTERS
     // ─────────────────────────────────────────────────────────────────────────
-    public string ProductId => productId;
-    public string ProductName => productName;
+
+    public string ProductId       => productId;
+    public string ProductName     => productName;
     public string ProductCategory => productCategory;
 }
