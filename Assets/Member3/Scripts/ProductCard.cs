@@ -44,9 +44,10 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private string productId;
     [SerializeField] private string productName;
     [SerializeField] private string productCategory;
+    private bool isSelected;
 
     // Action/callback triggered when this card is clicked
-    public static event Action<string> OnProductCardSelected;
+    public static event Action<ProductCard> OnProductCardSelected;
 
     // ─────────────────────────────────────────────────────────────────────────
     // UNITY LIFECYCLE
@@ -82,22 +83,26 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         productId       = id;
         productName     = name;
         productCategory = category;
+        isSelected      = false;
 
         if (productNameText != null)
-            productNameText.text = name;
+            productNameText.text = string.IsNullOrWhiteSpace(name) ? "Untitled product" : name;
 
         if (categoryBadgeText != null)
-            categoryBadgeText.text = category.ToUpper();
+            categoryBadgeText.text = string.IsNullOrWhiteSpace(category) ? "UNCATEGORIZED" : category.ToUpperInvariant();
 
-        if (productImage != null && imageSprite != null)
+        if (productImage != null)
         {
             productImage.sprite = imageSprite;
+            productImage.enabled = imageSprite != null;
             productImage.preserveAspect = true;
         }
 
         if (priceOrSkuText != null)
         {
-            priceOrSkuText.text = string.IsNullOrEmpty(priceOrTag) ? $"ID: {id}" : priceOrTag;
+            priceOrSkuText.text = string.IsNullOrWhiteSpace(priceOrTag)
+                ? $"ID: {(string.IsNullOrWhiteSpace(id) ? "—" : id)}"
+                : priceOrTag;
         }
 
         ResetVisualState();
@@ -108,9 +113,10 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     /// </summary>
     public void SetSelected(bool isSelected)
     {
+        this.isSelected = isSelected;
         if (cardBackground != null)
         {
-            cardBackground.color = isSelected ? selectedCardColor : defaultCardColor;
+            cardBackground.color = this.isSelected ? selectedCardColor : defaultCardColor;
         }
     }
 
@@ -122,7 +128,7 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         Debug.Log($"ProductCard: Selected item [{productId}] - {productName}");
         SetSelected(true);
-        OnProductCardSelected?.Invoke(productId);
+        OnProductCardSelected?.Invoke(this);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -142,7 +148,7 @@ public class ProductCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         if (cardBackground != null)
         {
-            cardBackground.color = defaultCardColor;
+            cardBackground.color = isSelected ? selectedCardColor : defaultCardColor;
         }
     }
 
