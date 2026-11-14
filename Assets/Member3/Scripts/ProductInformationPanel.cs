@@ -19,10 +19,17 @@ public class ProductInformationPanel : MonoBehaviour
     [SerializeField] private TMP_Text descriptionText;
     [SerializeField] private TMP_Text specificationsText;
 
+    [Header("Navigation controls")]
+    [SerializeField] private Button backButton;
+    [SerializeField] private Button homeButton;
+    [SerializeField] private Button closeButton;
+
     [Header("Empty state")]
     [SerializeField] private string emptyTitle = "Select a product";
     [SerializeField] private string emptyDescription = "Choose a product from the catalogue to view its details.";
     [SerializeField] private string emptySpecifications = "Product specifications will appear here.";
+
+    private bool hasProduct;
 
     private void Awake()
     {
@@ -32,7 +39,14 @@ public class ProductInformationPanel : MonoBehaviour
         if (productImage != null)
             productImage.preserveAspect = true;
 
-        ClearProduct();
+        RegisterButtonListeners();
+        if (!hasProduct)
+            ClearProduct();
+    }
+
+    private void OnDestroy()
+    {
+        RemoveButtonListeners();
     }
 
     /// <summary>Populates the panel with the selected product record.</summary>
@@ -43,6 +57,8 @@ public class ProductInformationPanel : MonoBehaviour
             ClearProduct();
             return;
         }
+
+        hasProduct = true;
 
         if (productNameText != null)
             productNameText.text = string.IsNullOrWhiteSpace(product.Name) ? "Untitled product" : product.Name;
@@ -73,6 +89,7 @@ public class ProductInformationPanel : MonoBehaviour
     /// <summary>Restores the panel's selection prompt.</summary>
     public void ClearProduct()
     {
+        hasProduct = false;
         if (productNameText != null) productNameText.text = emptyTitle;
         if (categoryText != null) categoryText.text = "Category: —";
         if (productIdText != null) productIdText.text = "Product ID: —";
@@ -99,5 +116,39 @@ public class ProductInformationPanel : MonoBehaviour
     {
         GameObject root = panelRoot != null ? panelRoot : gameObject;
         root.SetActive(false);
+    }
+
+    private void RegisterButtonListeners()
+    {
+        if (backButton != null)
+            backButton.onClick.AddListener(GoBack);
+        if (homeButton != null)
+            homeButton.onClick.AddListener(GoHome);
+        if (closeButton != null)
+            closeButton.onClick.AddListener(HidePanel);
+    }
+
+    private void RemoveButtonListeners()
+    {
+        if (backButton != null)
+            backButton.onClick.RemoveListener(GoBack);
+        if (homeButton != null)
+            homeButton.onClick.RemoveListener(GoHome);
+        if (closeButton != null)
+            closeButton.onClick.RemoveListener(HidePanel);
+    }
+
+    private void GoBack()
+    {
+        HidePanel();
+        if (ProductCatalogueNavigation.Instance != null)
+            ProductCatalogueNavigation.Instance.ShowCatalogue();
+    }
+
+    private void GoHome()
+    {
+        HidePanel();
+        if (ProductCatalogueNavigation.Instance != null)
+            ProductCatalogueNavigation.Instance.ShowHome();
     }
 }

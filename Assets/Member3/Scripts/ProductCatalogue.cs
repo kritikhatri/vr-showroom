@@ -30,12 +30,15 @@ public class ProductCatalogue : MonoBehaviour
 
     private readonly Dictionary<string, Member3.Data.Product> productsById =
         new Dictionary<string, Member3.Data.Product>(StringComparer.OrdinalIgnoreCase);
+    private readonly List<Member3.Data.Product> productRecords = new List<Member3.Data.Product>();
+    private readonly List<Member3.Data.Product> filteredProductRecords = new List<Member3.Data.Product>();
 
     public event Action<CategorySelectionPanel.ProductCategory, int> ProductsFiltered;
 
     public CategorySelectionPanel.ProductCategory CurrentCategory { get; private set; }
     public int VisibleProductCount { get; private set; }
     public string CurrentSearchQuery { get; private set; } = string.Empty;
+    public IReadOnlyList<Member3.Data.Product> FilteredProducts => filteredProductRecords;
 
     private void Awake()
     {
@@ -106,6 +109,13 @@ public class ProductCatalogue : MonoBehaviour
 
     private void ApplyFilters()
     {
+        filteredProductRecords.Clear();
+        foreach (Member3.Data.Product product in productRecords)
+        {
+            if (MatchesCategory(product.Category) && MatchesSearch(product.Name))
+                filteredProductRecords.Add(product);
+        }
+
         VisibleProductCount = 0;
 
         for (int i = productCards.Count - 1; i >= 0; i--)
@@ -117,18 +127,18 @@ public class ProductCatalogue : MonoBehaviour
                 continue;
             }
 
-            bool matchesCategory = CurrentCategory == CategorySelectionPanel.ProductCategory.All ||
-                string.Equals(card.ProductCategory, CurrentCategory.ToString(), StringComparison.OrdinalIgnoreCase);
-
+            string category = card.ProductCategory;
             string productName = card.ProductName;
             if (productsById.TryGetValue(card.ProductId, out Member3.Data.Product product) &&
-                !string.IsNullOrWhiteSpace(product.Name))
-                productName = product.Name;
+                product != null)
+            {
+                if (!string.IsNullOrWhiteSpace(product.Category))
+                    category = product.Category;
+                if (!string.IsNullOrWhiteSpace(product.Name))
+                    productName = product.Name;
+            }
 
-            bool matchesSearch = string.IsNullOrEmpty(CurrentSearchQuery) ||
-                (!string.IsNullOrEmpty(productName) &&
-                 productName.IndexOf(CurrentSearchQuery, StringComparison.OrdinalIgnoreCase) >= 0);
-            bool shouldShow = matchesCategory && matchesSearch;
+            bool shouldShow = MatchesCategory(category) && MatchesSearch(productName);
 
             card.gameObject.SetActive(shouldShow);
             if (shouldShow)
@@ -139,6 +149,19 @@ public class ProductCatalogue : MonoBehaviour
             resultCountText.text = VisibleProductCount == 1 ? "1 product" : $"{VisibleProductCount} products";
         if (noResultsMessage != null)
             noResultsMessage.SetActive(VisibleProductCount == 0);
+    }
+
+    private bool MatchesCategory(string category)
+    {
+        return CurrentCategory == CategorySelectionPanel.ProductCategory.All ||
+            string.Equals(category, CurrentCategory.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesSearch(string productName)
+    {
+        return string.IsNullOrEmpty(CurrentSearchQuery) ||
+            (!string.IsNullOrEmpty(productName) &&
+             productName.IndexOf(CurrentSearchQuery, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     /// <summary>Registers a card created after the catalogue has initialized.</summary>
@@ -164,6 +187,8 @@ public class ProductCatalogue : MonoBehaviour
     private void LoadProductData()
     {
         productsById.Clear();
+        productRecords.Clear();
+        filteredProductRecords.Clear();
 
         if (productDataJson == null)
         {
@@ -193,7 +218,10 @@ public class ProductCatalogue : MonoBehaviour
                 continue;
 
             if (!productsById.ContainsKey(product.Id))
+            {
                 productsById.Add(product.Id, product);
+                productRecords.Add(product);
+            }
             else
                 Debug.LogWarning($"ProductCatalogue: Duplicate product ID '{product.Id}' was ignored.", this);
         }
