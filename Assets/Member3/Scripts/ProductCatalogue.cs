@@ -59,6 +59,7 @@ public class ProductCatalogue : MonoBehaviour
     private void OnEnable()
     {
         ProductCard.OnProductCardSelected += ShowProductInformation;
+        ProductInteractor.OnProductSelected += ShowWorldProductInformation;
         if (searchInput != null)
             searchInput.onValueChanged.AddListener(SearchByName);
         if (clearSearchButton != null)
@@ -68,6 +69,7 @@ public class ProductCatalogue : MonoBehaviour
     private void OnDisable()
     {
         ProductCard.OnProductCardSelected -= ShowProductInformation;
+        ProductInteractor.OnProductSelected -= ShowWorldProductInformation;
         if (searchInput != null)
             searchInput.onValueChanged.RemoveListener(SearchByName);
         if (clearSearchButton != null)
@@ -252,6 +254,22 @@ public class ProductCatalogue : MonoBehaviour
         }
 
         informationPanel.DisplayProduct(product, image);
+        informationPanel.ShowPanel();
+    }
+
+    /// <summary>Receives a product selected in the 3D showroom by Member 2.</summary>
+    private void ShowWorldProductInformation(global::Product selectedProduct)
+    {
+        if (selectedProduct == null)
+            return;
+
+        if (informationPanel == null)
+        {
+            Debug.LogWarning("ProductCatalogue: Assign a ProductInformationPanel to show selected showroom products.", this);
+            return;
+        }
+
+        informationPanel.DisplayProduct(selectedProduct);
         informationPanel.ShowPanel();
     }
 }

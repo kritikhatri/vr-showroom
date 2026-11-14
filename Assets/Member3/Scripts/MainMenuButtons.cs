@@ -37,7 +37,7 @@ public class MainMenuButtons : MonoBehaviour
 
     [Header("--- Scene Names ---")]
     // Name of the showroom scene built by Member 1 (must match Build Settings)
-    [SerializeField] private string showroomSceneName    = "ShowroomScene";
+    [SerializeField] private string showroomSceneName    = "ThreadHaven_Showroom";
     // Name of the product catalogue scene / panel
     [SerializeField] private string productCatalogueScene = "ProductCatalogue";
 
