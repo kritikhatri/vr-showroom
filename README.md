@@ -17,6 +17,11 @@ The build scene list currently includes the showroom. The menu scene is a Canvas
 - [Showroom scene integration](Assets/Member3/UI/ShowroomScene_Integration.md)
 - [UI refinements](Assets/Member3/UI/Commit19_UI_Refinements.md)
 - [Layout reference visuals](Assets/Member3/Documentation/Screenshots/README.md)
+- [PostgreSQL and Prisma API setup](backend/README.md)
+
+## Product database
+
+The catalogue can load from the local PostgreSQL-backed API. Prisma maps the product records and categories to PostgreSQL; Unity requests catalogue JSON from the API. The existing sample JSON remains available as a fallback when the API is not running. See [backend setup](backend/README.md).
 
 ## Project scope
 

@@ -10,3 +10,6 @@
 *.sln
 *.slnx
 .DS_Store
+backend/.env
+backend/node_modules/
+backend/src/generated/

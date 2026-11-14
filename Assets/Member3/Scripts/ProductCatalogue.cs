@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Member3.Data;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 
 /// <summary>
@@ -21,6 +22,11 @@ public class ProductCatalogue : MonoBehaviour
     [Header("Product information")]
     [SerializeField] private TextAsset productDataJson;
     [SerializeField] private ProductInformationPanel informationPanel;
+
+    [Header("Product API")]
+    [SerializeField] private bool loadFromBackend = true;
+    [Tooltip("Use 127.0.0.1 for Unity running on the same computer as the API. Set this to the computer's LAN address for a standalone VR headset.")]
+    [SerializeField] private string productApiUrl = "http://127.0.0.1:3000/api/products";
 
     [Header("Product search")]
     [SerializeField] private TMP_InputField searchInput;
@@ -54,6 +60,12 @@ public class ProductCatalogue : MonoBehaviour
         LoadProductData();
         CurrentCategory = CategorySelectionPanel.ProductCategory.All;
         FilterByCategory(CurrentCategory);
+    }
+
+    private void Start()
+    {
+        if (loadFromBackend && !string.IsNullOrWhiteSpace(productApiUrl))
+            StartCoroutine(LoadProductDataFromBackend());
     }
 
     private void OnEnable()
@@ -198,21 +210,50 @@ public class ProductCatalogue : MonoBehaviour
             return;
         }
 
+        LoadProductData(productDataJson.text, "local sample JSON");
+    }
+
+    private System.Collections.IEnumerator LoadProductDataFromBackend()
+    {
+        using (UnityWebRequest request = UnityWebRequest.Get(productApiUrl))
+        {
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogWarning($"ProductCatalogue: Could not reach the product API at '{productApiUrl}'. Keeping the local JSON catalogue. {request.error}", this);
+                yield break;
+            }
+
+            if (LoadProductData(request.downloadHandler.text, "PostgreSQL API"))
+            {
+                ApplyFilters();
+                ProductsFiltered?.Invoke(CurrentCategory, VisibleProductCount);
+            }
+        }
+    }
+
+    private bool LoadProductData(string json, string source)
+    {
         ProductCatalogueData catalogueData;
         try
         {
-            catalogueData = JsonUtility.FromJson<ProductCatalogueData>(productDataJson.text);
+            catalogueData = JsonUtility.FromJson<ProductCatalogueData>(json);
         }
         catch (Exception exception)
         {
-            Debug.LogError($"ProductCatalogue: Could not parse product JSON. {exception.Message}", this);
-            return;
+            Debug.LogError($"ProductCatalogue: Could not parse the {source} response. {exception.Message}", this);
+            return false;
         }
         if (catalogueData == null || catalogueData.products == null)
         {
-            Debug.LogError("ProductCatalogue: The assigned product JSON has no products array.", this);
-            return;
+            Debug.LogError($"ProductCatalogue: The {source} response has no products array.", this);
+            return false;
         }
+
+        productsById.Clear();
+        productRecords.Clear();
+        filteredProductRecords.Clear();
 
         foreach (Member3.Data.Product product in catalogueData.products)
         {
@@ -228,7 +269,8 @@ public class ProductCatalogue : MonoBehaviour
                 Debug.LogWarning($"ProductCatalogue: Duplicate product ID '{product.Id}' was ignored.", this);
         }
 
-        Debug.Log($"ProductCatalogue: Loaded {productsById.Count} product record(s).", this);
+        Debug.Log($"ProductCatalogue: Loaded {productsById.Count} product record(s) from {source}.", this);
+        return true;
     }
 
     private void HandleProductCardSelected(ProductCard selectedCard)

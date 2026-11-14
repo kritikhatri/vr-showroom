@@ -4,7 +4,8 @@ Member 3 supplies the UI scripts and data flow for the virtual garment showroom.
 
 ## Current implementation
 
-- A sample JSON catalogue with eight example garments across Shirts, Jackets, Trousers, and Dresses.
+- A sample JSON catalogue with eight example garments across Shirts, Jackets, Trousers, and Dresses, used to seed PostgreSQL and as an offline fallback.
+- A PostgreSQL database accessed through Prisma and a small Node.js API; the Unity catalogue loads live records from the API when available.
 - Reusable `ProductCard` setup, selection feedback, and catalogue filtering/search.
 - `ProductInformationPanel` displays data from either the JSON catalogue or Member 2's selected scene `Product`.
 - `ProductCatalogueNavigation` and the product information panel provide Home, Back, and Close actions.
@@ -18,7 +19,7 @@ The scripts and reference scene are committed, but the checked-in menu scene con
 2. Add `Assets/Member2/Prefabs/Player.prefab` and confirm its camera and `ProductInteractor` input action references.
 3. Add a Canvas and EventSystem with category, catalogue, and product-information panels.
 4. Add `ProductCatalogueNavigation` and assign the Home, category, and catalogue panels and their buttons.
-5. Add `ProductCatalogue`; assign `Assets/Member3/Products/sample-products.json`, the information panel, card list, search field, clear button, result count, and empty-results message as applicable.
+5. Add `ProductCatalogue`; assign `Assets/Member3/Products/sample-products.json` as its fallback, set its Product API URL (default `http://127.0.0.1:3000/api/products` for Editor testing on the same computer), and assign the information panel, card list, search field, clear button, result count, and empty-results message as applicable.
 6. Assign the text, image, placeholder, and navigation button fields on `ProductInformationPanel`.
 7. Add Member 2's `Product` component to selectable 3D products and enter their names, categories, descriptions, specifications, and optional prices.
 8. Add `Assets/Member3/UI/MainMenuScene.unity` to Build Profiles if using the menu as the app entry scene. Build Profiles should list the menu first and `ThreadHaven_Showroom` after it. Add the menu's visible controls and assign its `MainMenuButtons` references.
@@ -31,7 +32,7 @@ After scene wiring is complete:
 
 1. Select **Enter Showroom** to load `ThreadHaven_Showroom`.
 2. Use the controls configured on Member 2's player prefab to move and look around.
-3. Select a product card to open its JSON-backed detail panel, or target and select a 3D product to show its scene `Product` details.
+3. Select a product card to open its API-backed detail panel (or the JSON fallback if the API is unavailable), or target and select a 3D product to show its scene `Product` details.
 4. Use the category buttons and search field together to filter the catalogue. Clearing the search keeps the selected category.
 5. Use **Back**, **Home**, and **Close** to return to the appropriate panel or hide product details.
 
@@ -42,6 +43,10 @@ After scene wiring is complete:
 The sample data is in [sample-products.json](Products/sample-products.json). Each record has an `id`, `name`, `category`, `description`, `specifications`, and optional `image` path. If an image path is set, place the sprite in a `Resources` folder and store the path without its extension, for example `Products/Shirts/classic-tee`. Empty paths use the panel's image placeholder.
 
 The sample garments and their specifications are illustrative. Replace them with verified project-approved data before presenting them as real product specifications.
+
+## PostgreSQL and Prisma backend
+
+The catalogue API and database setup are in [`backend/README.md`](../../backend/README.md). Start PostgreSQL and the API before entering Play Mode to load database records. For a standalone VR headset, set the Product API URL to the development computer's reachable LAN address; `127.0.0.1` always refers to the device running Unity.
 
 ## Documentation and visuals
 
