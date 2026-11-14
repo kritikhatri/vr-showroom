@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Member3.Data;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Filters product cards and connects card selection to product information.
@@ -20,6 +22,12 @@ public class ProductCatalogue : MonoBehaviour
     [SerializeField] private TextAsset productDataJson;
     [SerializeField] private ProductInformationPanel informationPanel;
 
+    [Header("Product search")]
+    [SerializeField] private TMP_InputField searchInput;
+    [SerializeField] private Button clearSearchButton;
+    [SerializeField] private TMP_Text resultCountText;
+    [SerializeField] private GameObject noResultsMessage;
+
     private readonly Dictionary<string, Member3.Data.Product> productsById =
         new Dictionary<string, Member3.Data.Product>(StringComparer.OrdinalIgnoreCase);
 
@@ -27,6 +35,7 @@ public class ProductCatalogue : MonoBehaviour
 
     public CategorySelectionPanel.ProductCategory CurrentCategory { get; private set; }
     public int VisibleProductCount { get; private set; }
+    public string CurrentSearchQuery { get; private set; } = string.Empty;
 
     private void Awake()
     {
@@ -47,11 +56,19 @@ public class ProductCatalogue : MonoBehaviour
     private void OnEnable()
     {
         ProductCard.OnProductCardSelected += ShowProductInformation;
+        if (searchInput != null)
+            searchInput.onValueChanged.AddListener(SearchByName);
+        if (clearSearchButton != null)
+            clearSearchButton.onClick.AddListener(ClearSearch);
     }
 
     private void OnDisable()
     {
         ProductCard.OnProductCardSelected -= ShowProductInformation;
+        if (searchInput != null)
+            searchInput.onValueChanged.RemoveListener(SearchByName);
+        if (clearSearchButton != null)
+            clearSearchButton.onClick.RemoveListener(ClearSearch);
     }
 
     private void OnDestroy()
@@ -64,6 +81,31 @@ public class ProductCatalogue : MonoBehaviour
     public void FilterByCategory(CategorySelectionPanel.ProductCategory category)
     {
         CurrentCategory = category;
+        ApplyFilters();
+
+        Debug.Log($"ProductCatalogue: Showing {VisibleProductCount} product(s) in {category}.");
+        ProductsFiltered?.Invoke(category, VisibleProductCount);
+    }
+
+    /// <summary>Filters the current category by a case-insensitive product name query.</summary>
+    public void SearchByName(string query)
+    {
+        CurrentSearchQuery = string.IsNullOrWhiteSpace(query) ? string.Empty : query.Trim();
+        ApplyFilters();
+        ProductsFiltered?.Invoke(CurrentCategory, VisibleProductCount);
+    }
+
+    /// <summary>Clears the search field and restores the current category results.</summary>
+    public void ClearSearch()
+    {
+        if (searchInput != null)
+            searchInput.SetTextWithoutNotify(string.Empty);
+
+        SearchByName(string.Empty);
+    }
+
+    private void ApplyFilters()
+    {
         VisibleProductCount = 0;
 
         for (int i = productCards.Count - 1; i >= 0; i--)
@@ -75,16 +117,28 @@ public class ProductCatalogue : MonoBehaviour
                 continue;
             }
 
-            bool shouldShow = category == CategorySelectionPanel.ProductCategory.All ||
-                string.Equals(card.ProductCategory, category.ToString(), StringComparison.OrdinalIgnoreCase);
+            bool matchesCategory = CurrentCategory == CategorySelectionPanel.ProductCategory.All ||
+                string.Equals(card.ProductCategory, CurrentCategory.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            string productName = card.ProductName;
+            if (productsById.TryGetValue(card.ProductId, out Member3.Data.Product product) &&
+                !string.IsNullOrWhiteSpace(product.Name))
+                productName = product.Name;
+
+            bool matchesSearch = string.IsNullOrEmpty(CurrentSearchQuery) ||
+                (!string.IsNullOrEmpty(productName) &&
+                 productName.IndexOf(CurrentSearchQuery, StringComparison.OrdinalIgnoreCase) >= 0);
+            bool shouldShow = matchesCategory && matchesSearch;
 
             card.gameObject.SetActive(shouldShow);
             if (shouldShow)
                 VisibleProductCount++;
         }
 
-        Debug.Log($"ProductCatalogue: Showing {VisibleProductCount} product(s) in {category}.");
-        ProductsFiltered?.Invoke(category, VisibleProductCount);
+        if (resultCountText != null)
+            resultCountText.text = VisibleProductCount == 1 ? "1 product" : $"{VisibleProductCount} products";
+        if (noResultsMessage != null)
+            noResultsMessage.SetActive(VisibleProductCount == 0);
     }
 
     /// <summary>Registers a card created after the catalogue has initialized.</summary>
@@ -94,11 +148,7 @@ public class ProductCatalogue : MonoBehaviour
             return;
 
         productCards.Add(card);
-        bool shouldShow = CurrentCategory == CategorySelectionPanel.ProductCategory.All ||
-            string.Equals(card.ProductCategory, CurrentCategory.ToString(), StringComparison.OrdinalIgnoreCase);
-        card.gameObject.SetActive(shouldShow);
-        if (shouldShow)
-            VisibleProductCount++;
+        ApplyFilters();
     }
 
     private void CollectChildCards()
