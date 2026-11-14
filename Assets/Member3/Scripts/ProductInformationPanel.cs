@@ -2,10 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// References the product detail panel UI and provides its empty state.
-/// Product-specific values will be supplied by the product selection flow.
-/// </summary>
+/// <summary>Displays selected product details and provides the panel empty state.</summary>
 public class ProductInformationPanel : MonoBehaviour
 {
     [Header("Panel")]
@@ -38,6 +35,41 @@ public class ProductInformationPanel : MonoBehaviour
         ClearProduct();
     }
 
+    /// <summary>Populates the panel with the selected product record.</summary>
+    public void DisplayProduct(Member3.Data.Product product, Sprite image)
+    {
+        if (product == null)
+        {
+            ClearProduct();
+            return;
+        }
+
+        if (productNameText != null)
+            productNameText.text = string.IsNullOrWhiteSpace(product.Name) ? "Untitled product" : product.Name;
+        if (categoryText != null)
+            categoryText.text = "Category: " + (string.IsNullOrWhiteSpace(product.Category) ? "—" : product.Category);
+        if (productIdText != null)
+            productIdText.text = "Product ID: " + (string.IsNullOrWhiteSpace(product.Id) ? "—" : product.Id);
+        if (descriptionText != null)
+            descriptionText.text = string.IsNullOrWhiteSpace(product.Description) ? "No description available." : product.Description;
+
+        string[] specificationLines = product.GetSpecificationLines();
+        if (specificationsText != null)
+            specificationsText.text = specificationLines.Length == 0
+                ? "No specifications available."
+                : string.Join("\n", specificationLines);
+
+        if (productImage != null)
+        {
+            productImage.sprite = image;
+            productImage.enabled = image != null;
+            productImage.preserveAspect = true;
+        }
+
+        if (imagePlaceholder != null)
+            imagePlaceholder.SetActive(image == null);
+    }
+
     /// <summary>Restores the panel's selection prompt.</summary>
     public void ClearProduct()
     {
@@ -59,13 +91,13 @@ public class ProductInformationPanel : MonoBehaviour
 
     public void ShowPanel()
     {
-        if (panelRoot != null)
-            panelRoot.SetActive(true);
+        GameObject root = panelRoot != null ? panelRoot : gameObject;
+        root.SetActive(true);
     }
 
     public void HidePanel()
     {
-        if (panelRoot != null)
-            panelRoot.SetActive(false);
+        GameObject root = panelRoot != null ? panelRoot : gameObject;
+        root.SetActive(false);
     }
 }
