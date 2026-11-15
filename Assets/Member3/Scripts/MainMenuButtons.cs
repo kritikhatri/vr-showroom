@@ -31,9 +31,9 @@ public class MainMenuButtons : MonoBehaviour
 
     [Header("--- Button Colours ---")]
     // Normal (idle) colour for each button
-    [SerializeField] private Color enterButtonColor   = new Color(0.2f, 0.6f, 1f, 1f);  // blue
-    [SerializeField] private Color exploreButtonColor = new Color(0.1f, 0.7f, 0.4f, 1f); // green
-    [SerializeField] private Color exitButtonColor    = new Color(0.8f, 0.2f, 0.2f, 1f); // red
+    [SerializeField] private Color enterButtonColor   = new Color32(36, 39, 35, 255);  // charcoal
+    [SerializeField] private Color exploreButtonColor = new Color32(252, 251, 247, 255); // paper
+    [SerializeField] private Color exitButtonColor    = new Color32(219, 215, 205, 255); // warm stone
 
     [Header("--- Scene Names ---")]
     // Name of the showroom scene built by Member 1 (must match Build Settings)

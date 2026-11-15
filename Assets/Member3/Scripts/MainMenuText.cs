@@ -101,7 +101,7 @@ public class MainMenuText : MonoBehaviour
         introText.color     = introColor;
         introText.alignment = TextAlignmentOptions.Center;
         // Allow text to wrap across multiple lines
-        introText.enableWordWrapping = true;
+        introText.textWrappingMode = TextWrappingModes.Normal;
     }
 
     // Sets the small version label at the bottom of the screen
