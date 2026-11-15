@@ -62,7 +62,7 @@ public class InspectModeUIBridge : MonoBehaviour
     private ProductInformationPanel ResolvePanel()
     {
         if (informationPanel != null) return informationPanel;
-        informationPanel = FindObjectOfType<ProductInformationPanel>();
+            informationPanel = FindFirstObjectByType<ProductInformationPanel>();
         return informationPanel;
     }
 }
