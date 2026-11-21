@@ -1,0 +1,221 @@
+ThreadHaven VR Showroom - database integration demo
+API: http://127.0.0.1:3000
+Sat Nov 21 22:47:06 IST 2026
+
+==================== 1. API can reach PostgreSQL ====================
+> GET /api/health
+< HTTP 200
+{
+  "status": "ok",
+  "database": "connected"
+}
+
+==================== 2. READ: categories with product counts (SELECT + COUNT) ====================
+> GET /api/categories
+< HTTP 200
+[
+  {
+    "id": "dresses",
+    "name": "Dresses"
+  },
+  {
+    "id": "jackets",
+    "name": "Jackets"
+  },
+  {
+    "id": "shirts",
+    "name": "Shirts"
+  },
+  {
+    "id": "trousers",
+    "name": "Trousers"
+  }
+]
+
+==================== 3. CREATE: add a new product through the API (INSERT into 3 tables) ====================
+> POST /api/products
+  body: {
+  "id": "SH-004",
+  "name": "Denim Overshirt",
+  "category": "Shirts",
+  "description": "A heavyweight denim overshirt with chest pockets.",
+  "specifications": { "material": "Cotton denim", "fit": "Relaxed", "care": "Machine wash cold" },
+  "sizes": [ { "label": "M", "stockQuantity": 6 }, { "label": "L", "stockQuantity": 4 }, { "label": "S", "stockQuantity": 2 } ]
+}
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot POST /api/products</pre>
+</body>
+</html>
+
+
+==================== 4. Check the database directly: the new rows exist ====================
+> psql: SELECT "id", "name", "categoryId", "createdAt" FROM "Product" WHERE "id" = 'SH-004';
+ id | name | categoryId | createdAt 
+----+------+------------+-----------
+(0 rows)
+
+> psql: SELECT * FROM "ProductSpecifications" WHERE "productId" = 'SH-004';
+ productId | material | fit | care 
+-----------+----------+-----+------
+(0 rows)
+
+> psql: SELECT ps."productId", s."label", ps."stockQuantity" FROM "ProductSize" ps JOIN "Size" s ON s."id" = ps."sizeId" WHERE ps."productId" = 'SH-004' ORDER BY s."sortOrder";
+ productId | label | stockQuantity 
+-----------+-------+---------------
+(0 rows)
+
+
+==================== 5. READ: the product as Unity receives it (availableSizes rebuilt from ProductSize) ====================
+> GET /api/products/SH-004
+< HTTP 404
+{
+  "error": "Product not found."
+}
+
+==================== 6. UPDATE: change care instructions (PATCH) ====================
+> PATCH /api/products/SH-004
+  body: { "specifications": { "care": "Wash inside out, cold" } }
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot PATCH /api/products/SH-004</pre>
+</body>
+</html>
+
+> psql: SELECT "productId", "care" FROM "ProductSpecifications" WHERE "productId" = 'SH-004';
+ productId | care 
+-----------+------
+(0 rows)
+
+
+==================== 7. UPDATE: size S sells out (stock = 0) ====================
+> PUT /api/products/SH-004/sizes/S
+  body: { "stockQuantity": 0 }
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot PUT /api/products/SH-004/sizes/S</pre>
+</body>
+</html>
+
+> psql: SELECT s."label", ps."stockQuantity" FROM "ProductSize" ps JOIN "Size" s ON s."id" = ps."sizeId" WHERE ps."productId" = 'SH-004' ORDER BY s."sortOrder";
+ label | stockQuantity 
+-------+---------------
+(0 rows)
+
+
+==================== 8. READ: filtered catalogue used by the Unity category page ====================
+> GET /api/products?category=Shirts
+< HTTP 500
+{
+  "error": "The showroom API could not complete the request."
+}
+
+==================== 9. READ: stock report (raw SQL with JOIN + GROUP BY in the API) ====================
+> GET /api/reports/stock-by-category
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot GET /api/reports/stock-by-category</pre>
+</body>
+</html>
+
+
+==================== 10. VALIDATION: invalid data is rejected with HTTP 400 ====================
+> POST /api/products
+  body: { "id": "bad", "name": "", "category": "Shirts", "description": "x", "sizes": [ { "label": "M", "stockQuantity": -3 } ] }
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot POST /api/products</pre>
+</body>
+</html>
+
+
+==================== 11. DUPLICATE: the same product id again is rejected with HTTP 409 (primary key) ====================
+> POST /api/products
+  body: { "id": "SH-004", "name": "Copy", "category": "Shirts", "description": "Duplicate id." }
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot POST /api/products</pre>
+</body>
+</html>
+
+
+==================== 12. REFERENTIAL INTEGRITY: a category with products cannot be deleted (409, ON DELETE RESTRICT) ====================
+> DELETE /api/categories/shirts
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot DELETE /api/categories/shirts</pre>
+</body>
+</html>
+
+
+==================== 13. DELETE: remove the product (child rows go with it: ON DELETE CASCADE) ====================
+> DELETE /api/products/SH-004
+< HTTP 404
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot DELETE /api/products/SH-004</pre>
+</body>
+</html>
+
+> psql: SELECT (SELECT COUNT(*) FROM "Product" WHERE "id" = 'SH-004') AS product_rows, (SELECT COUNT(*) FROM "ProductSpecifications" WHERE "productId" = 'SH-004') AS spec_rows, (SELECT COUNT(*) FROM "ProductSize" WHERE "productId" = 'SH-004') AS size_rows;
+ product_rows | spec_rows | size_rows 
+--------------+-----------+-----------
+            0 |         0 |         0
+(1 row)
+
+
+==================== 14. READ: deleted product now returns 404 ====================
+> GET /api/products/SH-004
+< HTTP 404
+{
+  "error": "Product not found."
+}
+
+Demo finished. The database is back to its starting state.
