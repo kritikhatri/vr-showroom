@@ -4,7 +4,8 @@
 
 **Version used:** PostgreSQL 18 (via Homebrew on macOS)  
 **ORM / Query layer:** Prisma ORM with TypeScript  
-**Backend framework:** Express.js (Node.js)
+**Backend framework:** Express.js (Node.js)  
+**Database Name:** `vr_showroom`
 
 ---
 
@@ -15,19 +16,20 @@
 | Structured product data (fixed fields per item) | Relational tables with strict schema |
 | Category ↔ Product relationship | Foreign key with `onDelete: Restrict` |
 | Product specifications as sub-record | One-to-one `ProductSpecifications` table |
-| Search by name | `@@index([name])` for fast LIKE queries |
-| Filter by category | `@@index([categoryId])` for fast joins |
-| Data integrity | Transactions, constraints, cascading deletes |
-| Scalability | Handles millions of rows without schema changes |
+| Product ↔ Sizes & Inventory (Many-to-Many) | Normalized join table `ProductSize` with stock tracking |
+| Search by name | `@@index([name])` for fast query lookup |
+| Filter by category | `@@index([categoryId])` for fast indexed joins |
+| Data integrity | Strict ACID transactions, constraints, cascading deletes |
+| Scalability & Reliability | Industry-standard relational DB for e-commerce & VR catalogues |
 
 ---
 
-## Database Schema
+## Database Schema (Relational Architecture)
 
 ```
 Category
-  id          TEXT  PRIMARY KEY   (e.g. "shirts")
-  name        TEXT  UNIQUE        (e.g. "Shirts")
+  id          TEXT  PRIMARY KEY   (e.g. "shirts", "jackets")
+  name        TEXT  UNIQUE        (e.g. "Shirts", "Jackets")
 
 Product
   id          TEXT  PRIMARY KEY   (e.g. "SH-001")
@@ -38,101 +40,82 @@ Product
   createdAt   TIMESTAMP
   updatedAt   TIMESTAMP
 
-ProductSpecifications   (one-to-one with Product)
+ProductSpecifications   (1-to-1 with Product)
   productId      TEXT  PRIMARY KEY → FK → Product.id
   material       TEXT
   fit            TEXT
   availableSizes TEXT
   care           TEXT
+
+Size
+  id          TEXT  PRIMARY KEY   (e.g. "s", "m", "32")
+  label       TEXT  UNIQUE        (e.g. "S", "M", "32")
+
+ProductSize   (Many-to-Many Join Table between Product and Size)
+  id            TEXT  PRIMARY KEY
+  productId     TEXT  → FK → Product.id (ON DELETE CASCADE)
+  sizeId        TEXT  → FK → Size.id (ON DELETE RESTRICT)
+  stockQuantity INTEGER DEFAULT 0
 ```
 
 ---
 
 ## PostgreSQL vs MongoDB — Comparison
 
-| Feature | **PostgreSQL** ✅ (our choice) | MongoDB |
+| Feature | **PostgreSQL** ✅ (Our Choice) | MongoDB |
 |---|---|---|
-| **Data model** | Relational (tables + foreign keys) | Document-based (JSON collections) |
-| **Schema** | Strict, enforced at DB level | Flexible / schema-less |
-| **Relationships** | Native JOIN, FK constraints | Manual references or embedded docs |
-| **Data integrity** | Strong (transactions, constraints) | Weaker by default |
-| **Query language** | Standard SQL | MongoDB Query Language (MQL) |
-| **Search** | Full SQL with indexes | `$regex`, `$text` operators |
-| **Category filtering** | `WHERE categoryId = 'shirts'` (indexed, fast) | `db.products.find({category:"Shirts"})` |
-| **Joins** | `INNER JOIN`, `LEFT JOIN` | `$lookup` (slower, manual) |
-| **Best for** | Structured, relational data ✅ | Unstructured, nested, frequently changing data |
-| **Our use case fit** | ✅ Perfect — fixed product fields, categories | ❌ Overkill — adds complexity for no benefit |
+| **Data model** | Relational (tables, primary/foreign keys) | Document-based (JSON/BSON collections) |
+| **Schema** | Strict, enforced at DB level | Flexible / dynamic / schema-less |
+| **Relationships** | Native `JOIN`, multi-table relationships, FK constraints | Manual referencing or nested embedded arrays |
+| **Data integrity** | Strong ACID compliance & referential integrity | Eventual consistency by default |
+| **Query language** | Standard SQL (powerful filtering, aggregate joins) | MongoDB Query Language (MQL) |
+| **Search & Filtering** | Indexed queries (`B-Tree`, `GIN`, `LIKE`, `JOIN`) | `$regex`, `$text`, `$lookup` (heavier overhead) |
+| **Category & Inventory** | Normalized join table (`ProductSize`) tracks exact stock | Array updates inside documents (can cause race conditions) |
+| **Best for** | Structured catalogues, inventory management, e-commerce | Unstructured logs, real-time analytics, social feeds |
+| **Our use case fit** | ✅ **Perfect** — garments have fixed attributes, sizes, and stock | ❌ Overkill and lacks strict foreign key enforcement |
 
 ### Why NOT MongoDB for this project?
-
-1. Our product data has **fixed, well-defined fields** — name, category, specs. A rigid schema is an advantage, not a limitation.
-2. We need **referential integrity** — a product must belong to a valid category. PostgreSQL enforces this automatically via foreign keys. MongoDB does not.
-3. **Category filtering and product search** are standard SQL operations — `WHERE`, `JOIN`, `LIKE` — that PostgreSQL executes efficiently with indexes.
-4. The team is using **Prisma ORM**, which works best with relational databases.
+1. **Garment & Industrial products have consistent attributes**: names, categories, specifications, and SKU sizes. A structured relational model is much cleaner and avoids duplicate data.
+2. **Referential Integrity**: A product cannot exist with an invalid category or non-existent size. PostgreSQL blocks orphaned records automatically.
+3. **Multi-Table Joins**: The VR showroom requires querying products alongside category details and live stock quantities in a single fast SQL query.
 
 ---
 
-## Database Connection
+## Terminal Demonstration Queries
 
-```
-Host:     localhost
-Port:     5432
-Database: vr_showroom
-Schema:   public
-ORM:      Prisma (TypeScript)
-```
-
-`.env` configuration:
-```
-DATABASE_URL="postgresql://dishimukati@localhost:5432/vr_showroom?schema=public"
-PORT=3000
-```
-
----
-
-## Sample Data in the Database
-
-**Categories (4 rows):**
-
-| id | name |
-|---|---|
-| shirts | Shirts |
-| jackets | Jackets |
-| trousers | Trousers |
-| dresses | Dresses |
-
-**Products (8 rows):**
-
-| id | name | category |
-|---|---|---|
-| SH-001 | Classic Cotton Crew Neck T-Shirt | Shirts |
-| SH-002 | Oxford Button-Down Shirt | Shirts |
-| JK-001 | Lightweight Utility Jacket | Jackets |
-| JK-002 | Quilted Insulated Jacket | Jackets |
-| TR-001 | Straight-Leg Work Trousers | Trousers |
-| TR-002 | Stretch Chino Trousers | Trousers |
-| DR-001 | Everyday A-Line Dress | Dresses |
-| DR-002 | Formal Woven Midi Dress | Dresses |
-
----
-
-## SQL Queries for Demonstration
-
+### 1. View All Tables
 ```sql
--- Show first 5 products
-SELECT * FROM "Product" LIMIT 5;
-
--- Show all categories
-SELECT * FROM "Category";
-
--- Filter products by category
-SELECT p.id, p.name, c.name AS category
-FROM "Product" p
-JOIN "Category" c ON p."categoryId" = c.id
-WHERE c.name = 'Shirts';
-
--- Show products with specifications
-SELECT p.name, s.material, s.fit, s."availableSizes"
-FROM "Product" p
-JOIN "ProductSpecifications" s ON p.id = s."productId";
+\dt
 ```
+
+### 2. View Table Definitions
+```sql
+\d "Product"
+\d "ProductSize"
+```
+
+### 3. Basic Inspection Queries
+```sql
+SELECT * FROM "Category";
+SELECT * FROM "Product" LIMIT 5;
+```
+
+### 4. Advanced 4-Table JOIN Query (Product + Category + Size + Stock)
+```sql
+SELECT
+    p."name",
+    c."name" AS category,
+    s."label" AS size,
+    ps."stockQuantity"
+FROM "Product" p
+JOIN "Category" c
+    ON p."categoryId" = c."id"
+JOIN "ProductSize" ps
+    ON p."id" = ps."productId"
+JOIN "Size" s
+    ON s."id" = ps."sizeId"
+ORDER BY p."name";
+```
+
+> **Presentation Explanation:**  
+> *"This query combines four tables to display product names, their categories, available sizes and stock quantities."*
