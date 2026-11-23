@@ -1,0 +1,306 @@
+Null display is "(null)".
+
+=== Q1. INSERT: add a new arrival (product + specifications + sizes in one transaction) ===
+BEGIN;
+BEGIN
+INSERT INTO "Product" ("id", "name", "description", "imagePath", "categoryId", "updatedAt")
+VALUES ('SH-003', 'Linen Short-Sleeve Shirt',
+        'A light linen shirt with a camp collar for warm days.',
+        NULL, 'shirts', CURRENT_TIMESTAMP);
+INSERT 0 1
+INSERT INTO "ProductSpecifications" ("productId", "material", "fit", "care")
+VALUES ('SH-003', '100% linen', 'Relaxed', 'Hand wash cold');
+INSERT 0 1
+INSERT INTO "ProductSize" ("productId", "sizeId", "stockQuantity")
+SELECT 'SH-003', s."id", v.stock
+FROM (VALUES ('S', 8), ('M', 12), ('L', 10)) AS v(label, stock)
+JOIN "Size" s ON s."label" = v.label;
+INSERT 0 3
+COMMIT;
+COMMIT
+SELECT p."id", p."name", c."name" AS category, ps."stockQuantity", s."label" AS size
+FROM "Product" p
+JOIN "Category" c     ON c."id" = p."categoryId"
+JOIN "ProductSize" ps ON ps."productId" = p."id"
+JOIN "Size" s         ON s."id" = ps."sizeId"
+WHERE p."id" = 'SH-003'
+ORDER BY s."sortOrder";
+   id   |           name           | category | stockQuantity | size 
+--------+--------------------------+----------+---------------+------
+ SH-003 | Linen Short-Sleeve Shirt | Shirts   |             8 | S
+ SH-003 | Linen Short-Sleeve Shirt | Shirts   |            12 | M
+ SH-003 | Linen Short-Sleeve Shirt | Shirts   |            10 | L
+(3 rows)
+
+
+=== Q2. SELECT + JOIN + filter + sort: the Shirts page of the Unity catalogue ===
+SELECT p."id",
+       p."name",
+       spec."material",
+       spec."fit",
+       string_agg(s."label", ', ' ORDER BY s."sortOrder") AS "availableSizes"
+FROM "Product" p
+JOIN "Category" c                    ON c."id" = p."categoryId"
+LEFT JOIN "ProductSpecifications" spec ON spec."productId" = p."id"
+LEFT JOIN "ProductSize" ps           ON ps."productId" = p."id"
+LEFT JOIN "Size" s                   ON s."id" = ps."sizeId"
+WHERE c."name" = 'Shirts'
+GROUP BY p."id", p."name", spec."material", spec."fit"
+ORDER BY p."name" ASC;
+   id   |               name               |      material       |   fit   | availableSizes 
+--------+----------------------------------+---------------------+---------+----------------
+ SH-001 | Classic Cotton Crew Neck T-Shirt | 100% cotton         | Regular | S, M, L, XL
+ SH-003 | Linen Short-Sleeve Shirt         | 100% linen          | Relaxed | S, M, L
+ SH-002 | Oxford Button-Down Shirt         | Cotton Oxford cloth | Regular | S, M, L, XL
+(3 rows)
+
+
+=== Q3. SELECT with pattern filter: the showroom search box ("cotton") ===
+SELECT p."id", p."name", spec."material"
+FROM "Product" p
+LEFT JOIN "ProductSpecifications" spec ON spec."productId" = p."id"
+WHERE p."name" ILIKE '%cotton%'
+   OR spec."material" ILIKE '%cotton%'
+ORDER BY p."id";
+   id   |               name               |        material         
+--------+----------------------------------+-------------------------
+ DR-001 | Everyday A-Line Dress            | Cotton poplin
+ JK-001 | Lightweight Utility Jacket       | Cotton-polyester twill
+ SH-001 | Classic Cotton Crew Neck T-Shirt | 100% cotton
+ SH-002 | Oxford Button-Down Shirt         | Cotton Oxford cloth
+ TR-001 | Straight-Leg Work Trousers       | Cotton-polyester canvas
+ TR-002 | Stretch Chino Trousers           | Cotton with elastane
+(6 rows)
+
+
+=== Q4. UPDATE: restock the Oxford shirt in XL (15 units arrived) ===
+UPDATE "ProductSize" ps
+SET "stockQuantity" = ps."stockQuantity" + 15
+FROM "Size" s
+WHERE s."id" = ps."sizeId"
+  AND ps."productId" = 'SH-002'
+  AND s."label" = 'XL'
+RETURNING ps."productId", s."label" AS size, ps."stockQuantity";
+ productId | size | stockQuantity 
+-----------+------+---------------
+ SH-002    | XL   |            15
+(1 row)
+
+UPDATE 1
+
+=== Q5. UPDATE: correct the care instructions shown in the product information panel ===
+UPDATE "ProductSpecifications"
+SET "care" = 'Machine wash cold; tumble dry low'
+WHERE "productId" = 'JK-001'
+RETURNING "productId", "care";
+ productId |               care                
+-----------+-----------------------------------
+ JK-001    | Machine wash cold; tumble dry low
+(1 row)
+
+UPDATE 1
+UPDATE "Product" SET "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = 'JK-001';
+UPDATE 1
+
+=== Q6. Aggregate functions: overall stock summary for the catalogue ===
+SELECT COUNT(DISTINCT ps."productId")          AS products_with_sizes,
+       COUNT(*)                                AS product_size_rows,
+       SUM(ps."stockQuantity")                 AS total_units,
+       ROUND(AVG(ps."stockQuantity"), 2)       AS avg_units_per_size,
+       MIN(ps."stockQuantity")                 AS min_units,
+       MAX(ps."stockQuantity")                 AS max_units
+FROM "ProductSize" ps;
+ products_with_sizes | product_size_rows | total_units | avg_units_per_size | min_units | max_units 
+---------------------+-------------------+-------------+--------------------+-----------+-----------
+                   9 |                39 |         427 |              10.95 |         0 |        25
+(1 row)
+
+
+=== Q7. GROUP BY: products and stock per category (category selection panel counts) ===
+SELECT c."name"                            AS category,
+       COUNT(DISTINCT p."id")              AS products,
+       COALESCE(SUM(ps."stockQuantity"), 0) AS total_units
+FROM "Category" c
+LEFT JOIN "Product" p      ON p."categoryId" = c."id"
+LEFT JOIN "ProductSize" ps ON ps."productId" = p."id"
+GROUP BY c."name"
+ORDER BY total_units DESC;
+ category | products | total_units 
+----------+----------+-------------
+ Shirts   |        3 |         167
+ Trousers |        2 |         127
+ Dresses  |        2 |          72
+ Jackets  |        2 |          61
+(4 rows)
+
+
+=== Q8. GROUP BY + HAVING: restock priority - products with fewer than 30 units in total ===
+SELECT p."id", p."name", SUM(ps."stockQuantity") AS total_units
+FROM "Product" p
+JOIN "ProductSize" ps ON ps."productId" = p."id"
+GROUP BY p."id", p."name"
+HAVING SUM(ps."stockQuantity") < 30
+ORDER BY total_units ASC;
+   id   |           name           | total_units 
+--------+--------------------------+-------------
+ JK-002 | Quilted Insulated Jacket |          25
+ DR-002 | Formal Woven Midi Dress  |          25
+(2 rows)
+
+
+=== Q9. Multi-table JOIN: low-stock alert (3 units or fewer) for the store team ===
+SELECT c."name" AS category, p."id", p."name", s."label" AS size, ps."stockQuantity"
+FROM "ProductSize" ps
+JOIN "Product"  p ON p."id" = ps."productId"
+JOIN "Category" c ON c."id" = p."categoryId"
+JOIN "Size"     s ON s."id" = ps."sizeId"
+WHERE ps."stockQuantity" <= 3
+ORDER BY ps."stockQuantity" ASC, c."name", s."sortOrder";
+ category |   id   |            name            | size | stockQuantity 
+----------+--------+----------------------------+------+---------------
+ Dresses  | DR-002 | Formal Woven Midi Dress    | XS   |             0
+ Trousers | TR-001 | Straight-Leg Work Trousers | 36   |             2
+ Dresses  | DR-002 | Formal Woven Midi Dress    | XL   |             3
+ Jackets  | JK-002 | Quilted Insulated Jacket   | XL   |             3
+(4 rows)
+
+
+=== Q10. Subquery: best-stocked products (above the average total stock per product) ===
+SELECT p."id", p."name", t.total_units
+FROM "Product" p
+JOIN (SELECT "productId", SUM("stockQuantity") AS total_units
+      FROM "ProductSize"
+      GROUP BY "productId") t ON t."productId" = p."id"
+WHERE t.total_units > (SELECT AVG(per_product.total)
+                       FROM (SELECT SUM("stockQuantity") AS total
+                             FROM "ProductSize"
+                             GROUP BY "productId") per_product)
+ORDER BY t.total_units DESC;
+   id   |               name               | total_units 
+--------+----------------------------------+-------------
+ SH-001 | Classic Cotton Crew Neck T-Shirt |          74
+ TR-002 | Stretch Chino Trousers           |          73
+ SH-002 | Oxford Button-Down Shirt         |          63
+ TR-001 | Straight-Leg Work Trousers       |          54
+(4 rows)
+
+
+=== Q11. EXISTS subquery: products with at least one size sold out (shown as "limited sizes" in VR) ===
+SELECT p."id", p."name"
+FROM "Product" p
+WHERE EXISTS (SELECT 1
+              FROM "ProductSize" ps
+              WHERE ps."productId" = p."id"
+                AND ps."stockQuantity" = 0)
+ORDER BY p."id";
+   id   |          name           
+--------+-------------------------
+ DR-002 | Formal Woven Midi Dress
+(1 row)
+
+
+=== Q12. CTE + window function: rank products by stock within each category ===
+WITH product_totals AS (
+    SELECT p."id", p."name", c."name" AS category, SUM(ps."stockQuantity") AS total_units
+    FROM "Product" p
+    JOIN "Category" c     ON c."id" = p."categoryId"
+    JOIN "ProductSize" ps ON ps."productId" = p."id"
+    GROUP BY p."id", p."name", c."name"
+)
+SELECT category, "id", "name", total_units,
+       RANK() OVER (PARTITION BY category ORDER BY total_units DESC) AS rank_in_category
+FROM product_totals
+ORDER BY category, rank_in_category;
+ category |   id   |               name               | total_units | rank_in_category 
+----------+--------+----------------------------------+-------------+------------------
+ Dresses  | DR-001 | Everyday A-Line Dress            |          47 |                1
+ Dresses  | DR-002 | Formal Woven Midi Dress          |          25 |                2
+ Jackets  | JK-001 | Lightweight Utility Jacket       |          36 |                1
+ Jackets  | JK-002 | Quilted Insulated Jacket         |          25 |                2
+ Shirts   | SH-001 | Classic Cotton Crew Neck T-Shirt |          74 |                1
+ Shirts   | SH-002 | Oxford Button-Down Shirt         |          63 |                2
+ Shirts   | SH-003 | Linen Short-Sleeve Shirt         |          30 |                3
+ Trousers | TR-002 | Stretch Chino Trousers           |          73 |                1
+ Trousers | TR-001 | Straight-Leg Work Trousers       |          54 |                2
+(9 rows)
+
+
+=== Q13. DELETE: stop offering the formal dress in XS (remove one many-to-many link) ===
+DELETE FROM "ProductSize" ps
+USING "Size" s
+WHERE s."id" = ps."sizeId"
+  AND ps."productId" = 'DR-002'
+  AND s."label" = 'XS'
+RETURNING ps."productId", s."label" AS removed_size;
+ productId | removed_size 
+-----------+--------------
+ DR-002    | XS
+(1 row)
+
+DELETE 1
+
+=== Q14. DELETE with ON DELETE CASCADE: withdraw the trial linen shirt ===
+SELECT 'before' AS moment,
+       (SELECT COUNT(*) FROM "Product" WHERE "id" = 'SH-003')                   AS product_rows,
+       (SELECT COUNT(*) FROM "ProductSpecifications" WHERE "productId" = 'SH-003') AS spec_rows,
+       (SELECT COUNT(*) FROM "ProductSize" WHERE "productId" = 'SH-003')         AS size_rows;
+ moment | product_rows | spec_rows | size_rows 
+--------+--------------+-----------+-----------
+ before |            1 |         1 |         3
+(1 row)
+
+DELETE FROM "Product" WHERE "id" = 'SH-003';
+DELETE 1
+SELECT 'after' AS moment,
+       (SELECT COUNT(*) FROM "Product" WHERE "id" = 'SH-003')                   AS product_rows,
+       (SELECT COUNT(*) FROM "ProductSpecifications" WHERE "productId" = 'SH-003') AS spec_rows,
+       (SELECT COUNT(*) FROM "ProductSize" WHERE "productId" = 'SH-003')         AS size_rows;
+ moment | product_rows | spec_rows | size_rows 
+--------+--------------+-----------+-----------
+ after  |            0 |         0 |         0
+(1 row)
+
+
+=== Q15. Data integrity: each of these must be REJECTED by the database ===
+--- 15a. duplicate size label (UNIQUE) ---
+INSERT INTO "Size" ("label", "sizeSystem", "sortOrder") VALUES ('M', 'ALPHA', 4);
+ERROR:  duplicate key value violates unique constraint "Size_label_key"
+DETAIL:  Key (label)=(M) already exists.
+--- 15b. negative stock (CHECK) ---
+UPDATE "ProductSize" SET "stockQuantity" = -5 WHERE "productId" = 'SH-001';
+ERROR:  new row for relation "ProductSize" violates check constraint "ProductSize_stock_non_negative_check"
+DETAIL:  Failing row contains (SH-001, 2, -5).
+--- 15c. product in a category that does not exist (FOREIGN KEY) ---
+INSERT INTO "Product" ("id", "name", "description", "categoryId", "updatedAt")
+VALUES ('HT-001', 'Wool Beanie', 'A warm knitted hat.', 'hats', CURRENT_TIMESTAMP);
+ERROR:  insert or update on table "Product" violates foreign key constraint "Product_categoryId_fkey"
+DETAIL:  Key (categoryId)=(hats) is not present in table "Category".
+--- 15d. product without a name (NOT NULL) ---
+INSERT INTO "Product" ("id", "description", "categoryId", "updatedAt")
+VALUES ('SH-009', 'No name given.', 'shirts', CURRENT_TIMESTAMP);
+ERROR:  null value in column "name" of relation "Product" violates not-null constraint
+DETAIL:  Failing row contains (SH-009, null, No name given., null, shirts, 2026-11-21 16:59:59.548, 2026-11-21 16:59:59.548).
+--- 15e. badly formatted product code (CHECK) ---
+INSERT INTO "Product" ("id", "name", "description", "categoryId", "updatedAt")
+VALUES ('shirt4', 'Test', 'Bad id.', 'shirts', CURRENT_TIMESTAMP);
+ERROR:  new row for relation "Product" violates check constraint "Product_id_format_check"
+DETAIL:  Failing row contains (shirt4, Test, Bad id., null, shirts, 2026-11-21 16:59:59.548, 2026-11-21 16:59:59.548).
+--- 15f. deleting a category that still has products (ON DELETE RESTRICT) ---
+DELETE FROM "Category" WHERE "id" = 'jackets';
+ERROR:  update or delete on table "Category" violates foreign key constraint "Product_categoryId_fkey" on table "Product"
+DETAIL:  Key (id)=(jackets) is still referenced from table "Product".
+
+=== Q16. Indexing: query plan for the catalogue category filter ===
+SET enable_seqscan = off;
+SET
+EXPLAIN SELECT "id", "name" FROM "Product" WHERE "categoryId" = 'shirts';
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Bitmap Heap Scan on "Product"  (cost=4.16..9.50 rows=2 width=64)
+   Recheck Cond: ("categoryId" = 'shirts'::text)
+   ->  Bitmap Index Scan on "Product_categoryId_idx"  (cost=0.00..4.16 rows=2 width=0)
+         Index Cond: ("categoryId" = 'shirts'::text)
+(4 rows)
+
+RESET enable_seqscan;
+RESET

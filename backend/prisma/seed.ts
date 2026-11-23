@@ -2,6 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { parseSizeList, sizeSystemFor, sortOrderFor } from "../src/sizes";
 
 interface SeedProduct {
   id: string;
@@ -22,6 +23,19 @@ interface SeedCatalogue {
   industry?: string;
   products: SeedProduct[];
 }
+
+// Sample stock levels per product and size. The Unity JSON file has no stock
+// information, so these demo values are kept here. Sizes not listed get 0.
+const SAMPLE_STOCK: Record<string, Record<string, number>> = {
+  "SH-001": { S: 18, M: 25, L: 22, XL: 9 },
+  "SH-002": { S: 12, M: 20, L: 16, XL: 0 },
+  "JK-001": { S: 7, M: 14, L: 11, XL: 4 },
+  "JK-002": { S: 5, M: 9, L: 8, XL: 3 },
+  "TR-001": { "28": 6, "30": 15, "32": 19, "34": 12, "36": 2 },
+  "TR-002": { "28": 10, "30": 21, "32": 24, "34": 13, "36": 5 },
+  "DR-001": { XS: 4, S: 11, M: 16, L: 10, XL: 6 },
+  "DR-002": { XS: 0, S: 6, M: 9, L: 7, XL: 3 }
+};
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -54,7 +68,7 @@ async function main() {
       category: { connect: { name: product.category } }
     };
 
-    const specifications = product.specifications ?? {};
+    const { availableSizes, ...specifications } = product.specifications ?? {};
     await prisma.product.upsert({
       where: { id: product.id },
       update: {
@@ -72,6 +86,21 @@ async function main() {
         specifications: { create: specifications }
       }
     });
+
+    for (const label of parseSizeList(availableSizes)) {
+      const size = await prisma.size.upsert({
+        where: { label },
+        update: {},
+        create: { label, sizeSystem: sizeSystemFor(label), sortOrder: sortOrderFor(label) }
+      });
+
+      const stockQuantity = SAMPLE_STOCK[product.id]?.[label] ?? 0;
+      await prisma.productSize.upsert({
+        where: { productId_sizeId: { productId: product.id, sizeId: size.id } },
+        update: { stockQuantity },
+        create: { productId: product.id, sizeId: size.id, stockQuantity }
+      });
+    }
   }
 
   console.log(`Seeded ${catalogue.products.length} products into PostgreSQL.`);

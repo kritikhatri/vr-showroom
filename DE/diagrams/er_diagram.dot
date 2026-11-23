@@ -1,0 +1,69 @@
+// ER diagram for the ThreadHaven VR Showroom database.
+// Render:  dot -Tsvg er_diagram.dot -o er_diagram.svg
+//          dot -Tpng -Gdpi=150 er_diagram.dot -o er_diagram.png
+digraph ThreadHaven {
+  graph [rankdir=LR, splines=spline, nodesep=0.8, ranksep=1.3, pad=0.4, bgcolor="white",
+         fontname="Helvetica", label="ThreadHaven VR Showroom - Entity Relationship Diagram (PostgreSQL, 3NF)",
+         labelloc=t, fontsize=18];
+  node  [shape=plain, fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=10, color="#444444", arrowsize=0.9];
+
+  Category [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+      <tr><td bgcolor="#1f4e79" colspan="2"><font color="white"><b>Category</b></font></td></tr>
+      <tr><td align="left"><b>PK</b></td><td align="left" port="id">id : TEXT (slug)</td></tr>
+      <tr><td align="left"><b>UQ</b></td><td align="left">name : TEXT</td></tr>
+    </table>>];
+
+  Product [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+      <tr><td bgcolor="#1f4e79" colspan="2"><font color="white"><b>Product</b></font></td></tr>
+      <tr><td align="left"><b>PK</b></td><td align="left" port="id">id : TEXT (e.g. SH-001)</td></tr>
+      <tr><td align="left"></td><td align="left">name : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">description : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">imagePath : TEXT (nullable)</td></tr>
+      <tr><td align="left" port="cat"><b>FK</b></td><td align="left">categoryId : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">createdAt : TIMESTAMP</td></tr>
+      <tr><td align="left"></td><td align="left">updatedAt : TIMESTAMP</td></tr>
+    </table>>];
+
+  ProductSpecifications [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+      <tr><td bgcolor="#2e75b6" colspan="2"><font color="white"><b>ProductSpecifications</b></font></td></tr>
+      <tr><td align="left" port="pid"><b>PK, FK</b></td><td align="left">productId : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">material : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">fit : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">care : TEXT</td></tr>
+    </table>>];
+
+  ProductSize [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+      <tr><td bgcolor="#c55a11" colspan="2"><font color="white"><b>ProductSize</b>  (junction)</font></td></tr>
+      <tr><td align="left" port="pid"><b>PK, FK</b></td><td align="left">productId : TEXT</td></tr>
+      <tr><td align="left" port="sid"><b>PK, FK</b></td><td align="left">sizeId : INTEGER</td></tr>
+      <tr><td align="left"></td><td align="left">stockQuantity : INTEGER (&gt;= 0)</td></tr>
+    </table>>];
+
+  Size [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+      <tr><td bgcolor="#1f4e79" colspan="2"><font color="white"><b>Size</b></font></td></tr>
+      <tr><td align="left"><b>PK</b></td><td align="left" port="id">id : SERIAL</td></tr>
+      <tr><td align="left"><b>UQ</b></td><td align="left">label : TEXT</td></tr>
+      <tr><td align="left"></td><td align="left">sizeSystem : ENUM (ALPHA, WAIST)</td></tr>
+      <tr><td align="left"></td><td align="left">sortOrder : INTEGER</td></tr>
+    </table>>];
+
+  Category:id:e -> Product:cat:w [dir=both, arrowtail=teetee, arrowhead=crowodot,
+      label="  1 : N  \n  contains  \n  (ON DELETE RESTRICT)  "];
+  Product:id:e -> ProductSpecifications:pid:w [dir=both, arrowtail=teetee, arrowhead=teeodot,
+      label="  1 : 1  \n  described by  \n  (ON DELETE CASCADE)  "];
+  Product:id:e -> ProductSize:pid:w [dir=both, arrowtail=teetee, arrowhead=crowodot,
+      label="  1 : N  \n  offered in  \n  (CASCADE)  "];
+  Size:id:e -> ProductSize:sid:w [dir=both, arrowtail=teetee, arrowhead=crowodot,
+      label="  1 : N  \n  (RESTRICT)  "];
+
+  note [shape=note, style=filled, fillcolor="#fff2cc", fontsize=10, label=
+"Product  M : N  Size is resolved\nthrough the ProductSize junction table.\nCrow's foot = many, bar = one,\ncircle = optional (zero allowed)."];
+  {rank=same; ProductSize; note}
+  note -> ProductSize [style=dashed, arrowhead=none, color="#999999"];
+}

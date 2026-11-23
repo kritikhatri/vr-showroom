@@ -1,121 +1,61 @@
-# 01 – Database Selection
+# 1. Database Selection and Justification
 
-## Selected Database: PostgreSQL ✅
+## Chosen database: PostgreSQL (relational)
 
-**Version used:** PostgreSQL 18 (via Homebrew on macOS)  
-**ORM / Query layer:** Prisma ORM with TypeScript  
-**Backend framework:** Express.js (Node.js)  
-**Database Name:** `vr_showroom`
+The ThreadHaven VR Showroom uses **PostgreSQL 15+**. The backend (`backend/`)
+reaches it through **Prisma ORM** and the `pg` driver adapter, and the Unity
+client reads the data from the backend's REST API.
 
----
+## What data the application stores
 
-## Why We Chose PostgreSQL
+The showroom is a virtual garment store in Unity. A visitor picks a
+**category**, browses **products** in that category, and opens a product to see
+its **specifications** (material, fit, care) and the **sizes** it comes in.
+The backend also lets staff manage the catalogue and the **stock level of each
+size**.
 
-| Requirement | How PostgreSQL meets it |
+| Data | Nature |
 |---|---|
-| Structured product data (fixed fields per item) | Relational tables with strict schema |
-| Category ↔ Product relationship | Foreign key with `onDelete: Restrict` |
-| Product specifications as sub-record | One-to-one `ProductSpecifications` table |
-| Product ↔ Sizes & Inventory (Many-to-Many) | Normalized join table `ProductSize` with stock tracking |
-| Search by name | `@@index([name])` for fast query lookup |
-| Filter by category | `@@index([categoryId])` for fast indexed joins |
-| Data integrity | Strict ACID transactions, constraints, cascading deletes |
-| Scalability & Reliability | Industry-standard relational DB for e-commerce & VR catalogues |
+| Categories (Shirts, Jackets, Trousers, Dresses) | Small, fixed set; each name must be unique |
+| Products | The core records; each belongs to exactly one category |
+| Specifications | Optional descriptive details; at most one set per product |
+| Sizes | Shared list of labels (XS–XL, waist 28–36) used by many products |
+| Stock per product and size | A number that belongs to a *pair* (product, size) |
 
----
+This data is **structured**: every product has the same fields. It is also
+**highly related**: categories have products, and products and sizes are
+linked many-to-many. Those are exactly the conditions a relational database is
+designed for.
 
-## Database Schema (Relational Architecture)
+## Why PostgreSQL and not MongoDB
 
-```
-Category
-  id          TEXT  PRIMARY KEY   (e.g. "shirts", "jackets")
-  name        TEXT  UNIQUE        (e.g. "Shirts", "Jackets")
-
-Product
-  id          TEXT  PRIMARY KEY   (e.g. "SH-001")
-  name        TEXT
-  description TEXT
-  imagePath   TEXT  (nullable)
-  categoryId  TEXT  → FK → Category.id
-  createdAt   TIMESTAMP
-  updatedAt   TIMESTAMP
-
-ProductSpecifications   (1-to-1 with Product)
-  productId      TEXT  PRIMARY KEY → FK → Product.id
-  material       TEXT
-  fit            TEXT
-  availableSizes TEXT
-  care           TEXT
-
-Size
-  id          TEXT  PRIMARY KEY   (e.g. "s", "m", "32")
-  label       TEXT  UNIQUE        (e.g. "S", "M", "32")
-
-ProductSize   (Many-to-Many Join Table between Product and Size)
-  id            TEXT  PRIMARY KEY
-  productId     TEXT  → FK → Product.id (ON DELETE CASCADE)
-  sizeId        TEXT  → FK → Size.id (ON DELETE RESTRICT)
-  stockQuantity INTEGER DEFAULT 0
-```
-
----
-
-## PostgreSQL vs MongoDB — Comparison
-
-| Feature | **PostgreSQL** ✅ (Our Choice) | MongoDB |
+| Requirement of the showroom | PostgreSQL | MongoDB |
 |---|---|---|
-| **Data model** | Relational (tables, primary/foreign keys) | Document-based (JSON/BSON collections) |
-| **Schema** | Strict, enforced at DB level | Flexible / dynamic / schema-less |
-| **Relationships** | Native `JOIN`, multi-table relationships, FK constraints | Manual referencing or nested embedded arrays |
-| **Data integrity** | Strong ACID compliance & referential integrity | Eventual consistency by default |
-| **Query language** | Standard SQL (powerful filtering, aggregate joins) | MongoDB Query Language (MQL) |
-| **Search & Filtering** | Indexed queries (`B-Tree`, `GIN`, `LIKE`, `JOIN`) | `$regex`, `$text`, `$lookup` (heavier overhead) |
-| **Category & Inventory** | Normalized join table (`ProductSize`) tracks exact stock | Array updates inside documents (can cause race conditions) |
-| **Best for** | Structured catalogues, inventory management, e-commerce | Unstructured logs, real-time analytics, social feeds |
-| **Our use case fit** | ✅ **Perfect** — garments have fixed attributes, sizes, and stock | ❌ Overkill and lacks strict foreign key enforcement |
+| Every product must belong to a category that really exists | Enforced by a **foreign key** | Must be checked in application code |
+| A category that still has products must not be deleted | `ON DELETE RESTRICT` blocks it | Must be checked in application code |
+| Deleting a product should remove its specs and size rows | `ON DELETE CASCADE` | Manual clean-up of referenced documents |
+| Many-to-many products ↔ sizes, without repeating size data | Junction table `ProductSize` | Either arrays of embedded copies (duplication) or manual references |
+| Stock can never be negative; product codes must look like `SH-001` | `CHECK` constraints in the database | Schema validation is optional and weaker |
+| Reports for staff: totals per category, low-stock lists, rankings | `JOIN`, `GROUP BY`, `HAVING`, subqueries, window functions | Possible with aggregation pipelines, but more complex for multi-collection joins |
+| Updating a product, its specs and its sizes together | Multi-table **ACID transactions** | Supported, but documents are usually designed to avoid needing them |
+| Fixed, predictable schema shared by the Unity client and the API | Schema defined once (Prisma + migrations) | Flexible schema is not needed here |
 
-### Why NOT MongoDB for this project?
-1. **Garment & Industrial products have consistent attributes**: names, categories, specifications, and SKU sizes. A structured relational model is much cleaner and avoids duplicate data.
-2. **Referential Integrity**: A product cannot exist with an invalid category or non-existent size. PostgreSQL blocks orphaned records automatically.
-3. **Multi-Table Joins**: The VR showroom requires querying products alongside category details and live stock quantities in a single fast SQL query.
+MongoDB's main strengths are flexible, changing document shapes and very
+large write-heavy workloads. Neither applies to a product catalogue whose
+structure is fixed and whose correctness depends on relationships between
+records.
 
----
+## Why PostgreSQL in particular (rather than another SQL database)
 
-## Terminal Demonstration Queries
+* **Free and open source.** Every team member can run it locally (see `backend/README.md`).
+* **Rich SQL.** CTEs, window functions, `string_agg`, `FILTER` and `ILIKE` are used in our queries (see [06_Queries.md](06_Queries.md)).
+* **Native ENUM types and regular-expression `CHECK` constraints.** These are used for `SizeSystem` and the product-code format.
+* **First-class Prisma support.** The schema is versioned as migrations in Git, so every teammate gets an identical database with `npm run db:setup`.
+* **Scales beyond the prototype.** It has B-tree indexes, connection pooling and read replicas when needed (see [08_Architecture_and_Decisions.md](08_Architecture_and_Decisions.md)).
 
-### 1. View All Tables
-```sql
-\dt
-```
+## Summary
 
-### 2. View Table Definitions
-```sql
-\d "Product"
-\d "ProductSize"
-```
-
-### 3. Basic Inspection Queries
-```sql
-SELECT * FROM "Category";
-SELECT * FROM "Product" LIMIT 5;
-```
-
-### 4. Advanced 4-Table JOIN Query (Product + Category + Size + Stock)
-```sql
-SELECT
-    p."name",
-    c."name" AS category,
-    s."label" AS size,
-    ps."stockQuantity"
-FROM "Product" p
-JOIN "Category" c
-    ON p."categoryId" = c."id"
-JOIN "ProductSize" ps
-    ON p."id" = ps."productId"
-JOIN "Size" s
-    ON s."id" = ps."sizeId"
-ORDER BY p."name";
-```
-
-> **Presentation Explanation:**  
-> *"This query combines four tables to display product names, their categories, available sizes and stock quantities."*
+The showroom's data is structured, relational and must stay consistent: no
+orphan products, no negative stock, no duplicated size data. PostgreSQL
+enforces all of this inside the database itself and supports the reporting
+queries staff need, so it is the most suitable choice for this project.

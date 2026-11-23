@@ -6,7 +6,7 @@ The Unity product catalogue is connected to a local REST API. The API uses Prism
 Unity ProductCatalogue --HTTP--> Express API --Prisma--> PostgreSQL
 ```
 
-The database schema separates `Category`, `Product`, and `ProductSpecifications`. Products refer to a category by ID, and their optional specifications are stored in a one-to-one related table. The API assembles those related records into the catalogue shape expected by Unity.
+The database schema separates `Category`, `Product`, `ProductSpecifications`, `Size`, and `ProductSize`. Products refer to a category by ID, their optional specifications are stored in a one-to-one related table, and the sizes each product is offered in (with stock per size) are stored in the `ProductSize` many-to-many table. The API assembles those related records into the catalogue shape expected by Unity, including the `availableSizes` text. The full database documentation for the DE submission is in [`../DE`](../DE/README.md).
 
 ## Requirements
 
@@ -31,7 +31,9 @@ The database schema separates `Category`, `Product`, and `ProductSpecifications`
    npm run db:setup
    ```
 
-   The migration creates the tables; the seed script imports the eight sample records from `Assets/Member3/Products/sample-products.json`.
+   The migrations create the tables (the second one moves the old comma-separated sizes into the `Size`/`ProductSize` tables and adds CHECK constraints); the seed script imports the eight sample records from `Assets/Member3/Products/sample-products.json` and sets demo stock levels.
+
+   If you already ran the first migration before, just run `npm run db:setup` again: your existing products keep their sizes.
 
 ## Start the API
 
@@ -45,6 +47,19 @@ Available read endpoints:
 - `GET /api/products?category=Shirts` — filters by category.
 - `GET /api/products?search=cotton` — searches product names.
 - `GET /api/products/:id` — returns one product or a 404.
+- `GET /api/reports/stock-by-category` — products, total units, and sold-out sizes per category.
+
+Write endpoints (catalogue management; JSON body):
+
+- `POST /api/categories` — `{ "name": "Hats" }`
+- `DELETE /api/categories/:id` — refused with 409 while the category has products.
+- `POST /api/products` — `{ "id": "SH-004", "name": "...", "category": "Shirts", "description": "...", "specifications": { "material": "...", "fit": "...", "care": "..." }, "sizes": [{ "label": "M", "stockQuantity": 6 }] }`
+- `PATCH /api/products/:id` — any of the fields above; `sizes`, if given, replaces the product's sizes.
+- `PUT /api/products/:id/sizes/:label` — `{ "stockQuantity": 0 }` sets the stock for one size.
+- `DELETE /api/products/:id/sizes/:label` — stops offering a size.
+- `DELETE /api/products/:id` — deletes the product, its specifications, and its sizes.
+
+Invalid data returns 400 with a list of problems, duplicates and records still in use return 409, and missing records return 404.
 
 You can inspect the database with `npm run db:studio` while the API is stopped or running.
 
